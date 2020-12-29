@@ -1,0 +1,6 @@
+[workspace]
+members = [
+  "ella",
+  "ella-parser",
+  "ella-source",
+]

@@ -1,0 +1,7 @@
+---
+source: ella-parser/src/parser.rs
+expression: "expr(\"1\")"
+---
+NumberLit(
+    1.0,
+)
