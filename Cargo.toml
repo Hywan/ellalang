@@ -3,4 +3,5 @@ members = [
   "ella",
   "ella-parser",
   "ella-source",
+  "ella-vm",
 ]
