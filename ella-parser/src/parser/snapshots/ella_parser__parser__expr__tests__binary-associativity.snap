@@ -1,0 +1,19 @@
+---
+source: ella-parser/src/parser/expr.rs
+expression: "expr(\"2 * 2 * 2\")"
+---
+Binary {
+    lhs: Binary {
+        lhs: NumberLit(
+            2.0,
+        ),
+        op: Asterisk,
+        rhs: NumberLit(
+            2.0,
+        ),
+    },
+    op: Asterisk,
+    rhs: NumberLit(
+        2.0,
+    ),
+}

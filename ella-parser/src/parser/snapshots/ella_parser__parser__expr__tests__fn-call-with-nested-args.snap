@@ -1,0 +1,19 @@
+---
+source: ella-parser/src/parser/expr.rs
+expression: "expr(\"foo(1, bar, baz())\")"
+---
+FnCall {
+    ident: "foo",
+    args: [
+        NumberLit(
+            1.0,
+        ),
+        Identifier(
+            "bar",
+        ),
+        FnCall {
+            ident: "baz",
+            args: [],
+        },
+    ],
+}
