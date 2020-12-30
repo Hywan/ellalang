@@ -20,6 +20,7 @@ impl<'a> Into<Source<'a>> for &'a str {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct SyntaxError {
     message: String,
     span: Range<usize>,

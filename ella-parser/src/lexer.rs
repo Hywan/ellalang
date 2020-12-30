@@ -37,6 +37,8 @@ pub enum Token {
     OpenBrace,
     #[token("}")]
     CloseBrace,
+    #[token(",")]
+    Comma,
 
     // keywords
     #[token("fn")]
