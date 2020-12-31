@@ -19,8 +19,8 @@ pub struct Vm {
 }
 
 /// Generate vm for binary operator.
-macro_rules! gen_binary_op {
-    ($self: ident, $op: tt) => {{
+macro_rules! gen_num_binary_op {
+    ($self: ident, $op: tt, $result: path) => {{
         let b: $crate::value::Value = $self.stack.pop().unwrap();
         let a: $crate::value::Value = $self.stack.pop().unwrap();
 
@@ -34,8 +34,12 @@ macro_rules! gen_binary_op {
             _ => return $self.runtime_error("Operands must be numbers."),
         };
 
-        $self.stack.push($crate::value::Value::Number(a $op b));
+        $self.stack.push($result(a $op b));
     }};
+
+    ($self: ident, $op: tt) => {
+        gen_num_binary_op!($self, $op, $crate::value::Value::Number)
+    }
 }
 
 impl Vm {
@@ -80,10 +84,10 @@ impl Vm {
                         _ => return self.runtime_error("Operand must be a boolean."),
                     }
                 }
-                Some(OpCode::Add) => gen_binary_op!(self, +),
-                Some(OpCode::Sub) => gen_binary_op!(self, -),
-                Some(OpCode::Mul) => gen_binary_op!(self, *),
-                Some(OpCode::Div) => gen_binary_op!(self, /),
+                Some(OpCode::Add) => gen_num_binary_op!(self, +),
+                Some(OpCode::Sub) => gen_num_binary_op!(self, -),
+                Some(OpCode::Mul) => gen_num_binary_op!(self, *),
+                Some(OpCode::Div) => gen_num_binary_op!(self, /),
                 Some(OpCode::Ret) => {
                     println!("{}", self.stack.pop().unwrap()); // return value
                     return InterpretResult::Ok;
@@ -95,16 +99,8 @@ impl Vm {
                     let a = self.stack.pop().unwrap();
                     self.stack.push(Value::Bool(a == b));
                 }
-                Some(OpCode::Greater) => {
-                    let b = self.stack.pop().unwrap();
-                    let a = self.stack.pop().unwrap();
-                    self.stack.push(Value::Bool(a > b));
-                }
-                Some(OpCode::Less) => {
-                    let b = self.stack.pop().unwrap();
-                    let a = self.stack.pop().unwrap();
-                    self.stack.push(Value::Bool(a < b));
-                }
+                Some(OpCode::Greater) => gen_num_binary_op!(self, >, Value::Bool),
+                Some(OpCode::Less) => gen_num_binary_op!(self, <, Value::Bool),
                 None => panic!("Invalid instruction"),
             }
         }

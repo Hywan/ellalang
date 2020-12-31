@@ -17,6 +17,7 @@ pub enum Token {
     LogicalNot,
 
     // binary operators
+    // - arithmetics
     #[token("+")]
     Plus,
     #[token("-")]
@@ -25,12 +26,23 @@ pub enum Token {
     Asterisk,
     #[token("/")]
     Slash,
+    // - assignment
     #[token("=")]
     Equals,
+    // - equality
     #[token("==")]
     EqualsEquals,
     #[token("!=")]
     NotEquals,
+    // - ordering
+    #[token(">")]
+    GreaterThan,
+    #[token(">=")]
+    GreaterThanEquals,
+    #[token("<")]
+    LessThan,
+    #[token("<=")]
+    LessThanEquals,
 
     // punctuation
     #[token("(")]
@@ -66,16 +78,17 @@ impl Token {
     pub fn binop_bp(&self) -> Option<(u8, u8)> {
         match self {
             /* Additive */
-            Token::Plus => Some((6, 7)),
-            Token::Minus => Some((6, 7)),
+            Token::Plus | Token::Minus => Some((8, 9)),
             /* Multiplicative */
-            Token::Asterisk => Some((8, 9)),
-            Token::Slash => Some((8, 9)),
+            Token::Asterisk | Token::Slash => Some((10, 11)),
             /* Assignment */
             Token::Equals => Some((3, 2)),
             /* Equality */
-            Token::EqualsEquals => Some((4, 5)),
-            Token::NotEquals => Some((4, 5)),
+            Token::EqualsEquals | Token::NotEquals => Some((4, 5)),
+            Token::GreaterThan
+            | Token::GreaterThanEquals
+            | Token::LessThan
+            | Token::LessThanEquals => Some((6, 7)),
             _ => None,
         }
     }

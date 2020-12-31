@@ -56,6 +56,18 @@ impl Visitor for Codegen {
                     self.chunk.write_chunk(OpCode::Eq, 0);
                     self.chunk.write_chunk(OpCode::Not, 0);
                 }
+                Token::LessThan => self.chunk.write_chunk(OpCode::Less, 0),
+                Token::LessThanEquals => {
+                    // a <= b equivalent to !(a > b)
+                    self.chunk.write_chunk(OpCode::Greater, 0);
+                    self.chunk.write_chunk(OpCode::Not, 0);
+                }
+                Token::GreaterThan => self.chunk.write_chunk(OpCode::Greater, 0),
+                Token::GreaterThanEquals => {
+                    // a >= b equivalent to !(a < b)
+                    self.chunk.write_chunk(OpCode::Less, 0);
+                    self.chunk.write_chunk(OpCode::Not, 0);
+                }
                 _ => unreachable!(),
             },
             Expr::Unary { op, .. } => match op {
