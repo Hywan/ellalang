@@ -16,7 +16,7 @@ fn main() {
         let source = input.as_str().into();
         let mut parser = Parser::new(&source);
         let mut ast = parser.parse_program();
-        eprintln!("{:#?}", ast);
+        // eprintln!("{:#?}", ast);
 
         eprintln!("{}", source.errors);
         if source.has_no_errors() {

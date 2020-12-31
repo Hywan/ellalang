@@ -1,8 +1,9 @@
 use crate::{
     chunk::{Chunk, OpCode},
-    value::{Value, ValueArray},
+    value::{object::Obj, Value, ValueArray},
 };
 use num_traits::FromPrimitive;
+use std::ptr;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum InterpretResult {
@@ -16,6 +17,10 @@ pub struct Vm {
     chunk: Chunk,
     /// VM stack.
     stack: ValueArray,
+    /// A single linked list to all the objects.
+    /// When allocating new objects, the `Box` should be leaked and added to the head of this field.
+    /// When the VM is dropped, all the objects in this field should be dropped as well.
+    objects: *mut Obj,
 }
 
 /// Generate vm for binary operator.
@@ -50,7 +55,7 @@ impl Vm {
     }
 
     fn read_constant(&mut self) -> Value {
-        let constant = self.chunk.constants[self.chunk.code[self.ip] as usize];
+        let constant = self.chunk.constants[self.chunk.code[self.ip] as usize].clone();
         self.ip += 1;
         constant
     }
@@ -112,7 +117,20 @@ impl Vm {
             ip: 0, // point to first instruction in chunk.code
             chunk,
             stack: Vec::with_capacity(256),
+            objects: ptr::null_mut(),
         };
         vm.run()
+    }
+}
+
+impl Drop for Vm {
+    fn drop(&mut self) {
+        let mut object = self.objects;
+        while !object.is_null() {
+            let next = unsafe { ptr::read(self.objects).next };
+            eprintln!("Dropping object {:?}", object);
+            unsafe { ptr::drop_in_place(object) };
+            object = next;
+        }
     }
 }

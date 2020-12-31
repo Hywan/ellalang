@@ -6,10 +6,7 @@ use ella_parser::{
     visitor::{walk_expr, Visitor},
 };
 
-use crate::{
-    chunk::{Chunk, OpCode},
-    value::Value,
-};
+use crate::{chunk::{Chunk, OpCode}, value::{Value, object::Obj}};
 
 /// Generate bytecode from an abstract syntax tree.
 pub struct Codegen {
@@ -43,7 +40,11 @@ impl Visitor for Codegen {
                 true => self.chunk.write_chunk(OpCode::LdTrue, 0),
                 false => self.chunk.write_chunk(OpCode::LdFalse, 0),
             },
-            Expr::StringLit(val) => todo!(),
+            Expr::StringLit(val) => {
+                let constant = self.chunk.add_constant(Value::Object(Box::new(Obj::new_string(val.clone()))));
+                self.chunk.write_chunk(OpCode::Ldc, 0);
+                self.chunk.write_chunk(constant, 0);  
+            }
             Expr::Identifier(_) => todo!(),
             Expr::FnCall { ident: _, args: _ } => todo!(),
             Expr::Binary { op, .. } => match op {

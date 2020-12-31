@@ -21,7 +21,7 @@ impl Chunk {
         name: &str,
         offset: usize,
     ) -> Result<usize, fmt::Error> {
-        let constant = self.constants[self.code[offset + 1] as usize];
+        let constant = self.constants[self.code[offset + 1] as usize].clone();
         writeln!(f, "{:<5} {}", name, constant)?;
         Ok(offset + 2)
     }
