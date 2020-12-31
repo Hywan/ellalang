@@ -56,6 +56,9 @@ impl Chunk {
             Some(OpCode::Ret) => self.simple_instr(f, "ret", offset),
             Some(OpCode::LdTrue) => self.simple_instr(f, "ld_true", offset),
             Some(OpCode::LdFalse) => self.simple_instr(f, "ld_false", offset),
+            Some(OpCode::Eq) => self.simple_instr(f, "eq", offset),
+            Some(OpCode::Greater) => self.simple_instr(f, "greater", offset),
+            Some(OpCode::Less) => self.simple_instr(f, "less", offset),
             None => self.simple_instr(f, "invalid", offset), // skip bad instruction
         } // returns the next ip
     }

@@ -27,6 +27,9 @@ pub enum OpCode {
     /// Loads `false` onto the stack.
     /// *1 byte*
     LdFalse = 9,
+    Eq = 10,
+    Greater = 11,
+    Less = 12,
 }
 
 pub struct Chunk {

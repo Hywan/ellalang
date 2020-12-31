@@ -51,8 +51,11 @@ impl Visitor for Codegen {
                 Token::Asterisk => self.chunk.write_chunk(OpCode::Mul, 0),
                 Token::Slash => self.chunk.write_chunk(OpCode::Div, 0),
                 Token::Equals => todo!(),
-                Token::EqualsEquals => todo!(),
-                Token::NotEquals => todo!(),
+                Token::EqualsEquals => self.chunk.write_chunk(OpCode::Eq, 0),
+                Token::NotEquals => {
+                    self.chunk.write_chunk(OpCode::Eq, 0);
+                    self.chunk.write_chunk(OpCode::Not, 0);
+                }
                 _ => unreachable!(),
             },
             Expr::Unary { op, .. } => match op {

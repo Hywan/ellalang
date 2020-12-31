@@ -90,6 +90,21 @@ impl Vm {
                 }
                 Some(OpCode::LdTrue) => self.stack.push(Value::Bool(true)),
                 Some(OpCode::LdFalse) => self.stack.push(Value::Bool(false)),
+                Some(OpCode::Eq) => {
+                    let b = self.stack.pop().unwrap();
+                    let a = self.stack.pop().unwrap();
+                    self.stack.push(Value::Bool(a == b));
+                }
+                Some(OpCode::Greater) => {
+                    let b = self.stack.pop().unwrap();
+                    let a = self.stack.pop().unwrap();
+                    self.stack.push(Value::Bool(a > b));
+                }
+                Some(OpCode::Less) => {
+                    let b = self.stack.pop().unwrap();
+                    let a = self.stack.pop().unwrap();
+                    self.stack.push(Value::Bool(a < b));
+                }
                 None => panic!("Invalid instruction"),
             }
         }
