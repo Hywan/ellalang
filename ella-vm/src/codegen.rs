@@ -43,6 +43,7 @@ impl Visitor for Codegen {
                 true => self.chunk.write_chunk(OpCode::LdTrue, 0),
                 false => self.chunk.write_chunk(OpCode::LdFalse, 0),
             },
+            Expr::StringLit(val) => todo!(),
             Expr::Identifier(_) => todo!(),
             Expr::FnCall { ident: _, args: _ } => todo!(),
             Expr::Binary { op, .. } => match op {

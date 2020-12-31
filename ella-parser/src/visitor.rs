@@ -10,6 +10,7 @@ pub fn walk_expr(visitor: &mut impl Visitor, expr: &mut Expr) {
     match expr {
         Expr::NumberLit(_) => {}
         Expr::BoolLit(_) => {}
+        Expr::StringLit(_) => {}
         Expr::Identifier(_) => {}
         Expr::FnCall { ident: _, args } => {
             for arg in args {

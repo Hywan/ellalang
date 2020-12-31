@@ -4,6 +4,7 @@ use crate::lexer::Token;
 pub enum Expr {
     NumberLit(f64),
     BoolLit(bool),
+    StringLit(String),
     /// An identifier (e.g. `foo`).
     Identifier(String),
     /// A function call (e.g. `foo(1, bar, baz())`).

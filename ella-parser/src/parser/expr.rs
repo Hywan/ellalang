@@ -12,7 +12,7 @@ impl<'a> Parser<'a> {
     fn parse_primary_expr(&mut self) -> Expr {
         // NOTE: prefix operators are handled here
         match self.current_token {
-            Token::NumberLit(_) | Token::BoolLit(_) => self.parse_literal_expr(),
+            Token::NumberLit(_) | Token::BoolLit(_) | Token::StringLit(_) => self.parse_literal_expr(),
             Token::Identifier(_) => self.parse_identifier_or_call_expr(),
             Token::LogicalNot => {
                 self.next();
@@ -72,6 +72,7 @@ impl<'a> Parser<'a> {
         let val = match self.current_token {
             Token::NumberLit(val) => Expr::NumberLit(val),
             Token::BoolLit(val) => Expr::BoolLit(val),
+            Token::StringLit(ref val) => Expr::StringLit(val.clone()),
             _ => {
                 self.unexpected();
                 Expr::Error

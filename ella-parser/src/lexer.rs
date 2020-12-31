@@ -7,6 +7,8 @@ pub enum Token {
     NumberLit(f64),
     #[regex(r"true|false", |lex| if lex.slice() == "true" { true } else { false } )]
     BoolLit(bool),
+    #[regex(r#""[^"]*""#, |lex| lex.slice()[1..lex.slice().len() - 1].to_string())]
+    StringLit(String),
 
     // identifiers
     #[regex("[a-zA-Z]+", |lex| lex.slice().to_string())]
