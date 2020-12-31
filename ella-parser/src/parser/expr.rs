@@ -21,6 +21,13 @@ impl<'a> Parser<'a> {
                     arg: Box::new(self.parse_expr()),
                 }
             }
+            Token::Minus => {
+                self.next();
+                Expr::Unary {
+                    op: Token::Minus,
+                    arg: Box::new(self.parse_expr()),
+                }
+            }
             _ => {
                 self.unexpected();
                 Expr::Error

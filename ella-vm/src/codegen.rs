@@ -72,6 +72,7 @@ impl Visitor for Codegen {
             },
             Expr::Unary { op, .. } => match op {
                 Token::LogicalNot => self.chunk.write_chunk(OpCode::Not, 0),
+                Token::Minus => self.chunk.write_chunk(OpCode::Neg, 0),
                 _ => unreachable!(),
             },
             Expr::Error => {}
