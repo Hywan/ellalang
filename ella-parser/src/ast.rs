@@ -17,5 +17,9 @@ pub enum Expr {
         op: Token,
         rhs: Box<Expr>,
     },
+    Unary {
+        op: Token,
+        arg: Box<Expr>,
+    },
     Error,
 }

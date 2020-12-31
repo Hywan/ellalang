@@ -12,11 +12,15 @@ pub enum Token {
     #[regex("[a-zA-Z]+", |lex| lex.slice().to_string())]
     Identifier(String),
 
-    // operators
+    // unary operators
+    #[token("!")]
+    LogicalNot,
+
+    // binary operators
     #[token("+")]
     Plus,
     #[token("-")]
-    Minus,
+    Minus, // NOTE: can also be unary
     #[token("*")]
     Asterisk,
     #[token("/")]

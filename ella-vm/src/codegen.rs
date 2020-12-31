@@ -39,12 +39,10 @@ impl Visitor for Codegen {
                 self.chunk.write_chunk(OpCode::Ldc, 0);
                 self.chunk.write_chunk(constant, 0);
             }
-            Expr::BoolLit(val) => {
-                match val {
-                    true => self.chunk.write_chunk(OpCode::LdTrue, 0),
-                    false => self.chunk.write_chunk(OpCode::LdFalse, 0),
-                }
-            }
+            Expr::BoolLit(val) => match val {
+                true => self.chunk.write_chunk(OpCode::LdTrue, 0),
+                false => self.chunk.write_chunk(OpCode::LdFalse, 0),
+            },
             Expr::Identifier(_) => todo!(),
             Expr::FnCall { ident: _, args: _ } => todo!(),
             Expr::Binary { op, .. } => match op {
@@ -55,6 +53,10 @@ impl Visitor for Codegen {
                 Token::Equals => todo!(),
                 Token::EqualsEquals => todo!(),
                 Token::NotEquals => todo!(),
+                _ => unreachable!(),
+            },
+            Expr::Unary { op, .. } => match op {
+                Token::LogicalNot => self.chunk.write_chunk(OpCode::Not, 0),
                 _ => unreachable!(),
             },
             Expr::Error => {}

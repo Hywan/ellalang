@@ -10,9 +10,17 @@ impl<'a> Parser<'a> {
 
     /// Parses a primary (atom) expression.
     fn parse_primary_expr(&mut self) -> Expr {
+        // NOTE: prefix operators are handled here
         match self.current_token {
             Token::NumberLit(_) | Token::BoolLit(_) => self.parse_literal_expr(),
             Token::Identifier(_) => self.parse_identifier_or_call_expr(),
+            Token::LogicalNot => {
+                self.next();
+                Expr::Unary {
+                    op: Token::LogicalNot,
+                    arg: Box::new(self.parse_expr()),
+                }
+            }
             _ => {
                 self.unexpected();
                 Expr::Error

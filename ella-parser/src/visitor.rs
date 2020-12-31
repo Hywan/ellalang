@@ -20,6 +20,7 @@ pub fn walk_expr(visitor: &mut impl Visitor, expr: &mut Expr) {
             visitor.visit_expr(lhs);
             visitor.visit_expr(rhs);
         }
+        Expr::Unary { op: _, arg } => visitor.visit_expr(arg),
         Expr::Error => {}
     }
 }
