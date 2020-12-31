@@ -1,4 +1,4 @@
-use std::{cell::RefCell, ops::Range};
+use std::{cell::RefCell, fmt, ops::Range};
 
 pub struct Source<'a> {
     pub content: &'a str,
@@ -11,6 +11,10 @@ impl<'a> Source<'a> {
             content,
             errors: ErrorReporter::new(),
         }
+    }
+
+    pub fn has_no_errors(&self) -> bool {
+        self.errors.errors.borrow().len() == 0
     }
 }
 
@@ -55,5 +59,21 @@ impl ErrorReporter {
 impl Default for ErrorReporter {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl fmt::Display for ErrorReporter {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let errors = self.errors.borrow();
+        for error in errors.iter() {
+            write!(
+                f,
+                "ERROR: {message} at line {line_number}",
+                message = error.message,
+                line_number = error.span.start
+            )?;
+        }
+
+        Ok(())
     }
 }

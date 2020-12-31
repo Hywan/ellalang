@@ -65,6 +65,7 @@ version = "0.1.0"
 name = "ella-vm"
 version = "0.1.0"
 dependencies = [
+ "ella-parser",
  "enum-primitive-derive",
  "num-traits",
 ]

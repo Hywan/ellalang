@@ -46,8 +46,16 @@ impl Chunk {
         // SAFETY:
         // If not a valid OpCode, none of the branches should match and thus cause an error.
         match OpCode::from_u8(instr) {
-            Some(OpCode::Ret) => self.simple_instr(f, "ret", offset),
             Some(OpCode::Ldc) => self.constant_instr(f, "ldc", offset),
+            Some(OpCode::Neg) => self.simple_instr(f, "neg", offset),
+            Some(OpCode::Not) => self.simple_instr(f, "not", offset),
+            Some(OpCode::Add) => self.simple_instr(f, "add", offset),
+            Some(OpCode::Sub) => self.simple_instr(f, "sub", offset),
+            Some(OpCode::Mul) => self.simple_instr(f, "mul", offset),
+            Some(OpCode::Div) => self.simple_instr(f, "div", offset),
+            Some(OpCode::Ret) => self.simple_instr(f, "ret", offset),
+            Some(OpCode::LdTrue) => self.simple_instr(f, "ld_true", offset),
+            Some(OpCode::LdFalse) => self.simple_instr(f, "ld_false", offset),
             None => self.simple_instr(f, "invalid", offset), // skip bad instruction
         } // returns the next ip
     }

@@ -5,8 +5,28 @@ use enum_primitive_derive::Primitive;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Primitive)]
 #[repr(u8)]
 pub enum OpCode {
+    /// Load a constant onto the stack.
+    /// *1 operand (2 bytes)*
     Ldc = 0,
-    Ret = 1,
+    /// Negate the last value on the stack.
+    /// *1 byte*
+    Neg = 1,
+    /// Logical not on a boolean value.
+    /// *1 byte*
+    Not = 2,
+    Add = 3,
+    Sub = 4,
+    Mul = 5,
+    Div = 6,
+    /// Returns the last value on the stack.
+    /// *1 byte*
+    Ret = 7,
+    /// Loads `true` onto the stack.
+    /// *1 byte*
+    LdTrue = 8,
+    /// Loads `false` onto the stack.
+    /// *1 byte*
+    LdFalse = 9,
 }
 
 pub struct Chunk {

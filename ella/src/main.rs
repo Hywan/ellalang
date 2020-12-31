@@ -1,18 +1,9 @@
 use ella_parser::parser::Parser;
-use ella_vm::vm::Vm;
+use ella_parser::visitor::Visitor;
+use ella_vm::{codegen::Codegen, vm::Vm};
 use std::io::{self, Write};
 
 fn main() {
-    // let source = r"fn foo(x) { return x * x; } ";
-
-    let mut chunk = ella_vm::chunk::Chunk::new();
-    chunk.write_chunk(ella_vm::chunk::OpCode::Ldc, 123);
-    let constant = chunk.add_constant(123456.0);
-    chunk.write_chunk(constant, 123);
-    chunk.write_chunk(ella_vm::chunk::OpCode::Ret, 124);
-    eprintln!("{}", chunk);
-    eprintln!("{:?}", Vm::interpret(chunk));
-
     let mut stdout = io::stdout();
     let stdin = io::stdin();
     loop {
@@ -24,6 +15,18 @@ fn main() {
 
         let source = input.as_str().into();
         let mut parser = Parser::new(&source);
-        println!("{:#?}", parser.parse_program());
+        let mut ast = parser.parse_program();
+        eprintln!("{:#?}", ast);
+
+        eprintln!("{}", source.errors);
+        if source.has_no_errors() {
+            let mut codegen = Codegen::new();
+            codegen.visit_expr(&mut ast);
+            let mut chunk = codegen.into_inner_chunk();
+            eprintln!("{}", chunk);
+
+            chunk.write_chunk(ella_vm::chunk::OpCode::Ret, 0);
+            eprintln!("{:?}", Vm::interpret(chunk));
+        }
     }
 }
