@@ -89,7 +89,31 @@ impl Vm {
                         _ => return self.runtime_error("Operand must be a boolean."),
                     }
                 }
-                Some(OpCode::Add) => gen_num_binary_op!(self, +),
+                Some(OpCode::Add) => {
+                    let b = self.stack.pop().unwrap();
+                    let a = self.stack.pop().unwrap();
+
+                    let a_num = a.cast_to_number();
+                    let b_num = b.cast_to_number();
+                    if a_num.is_some() && b_num.is_some() {
+                        self.stack
+                            .push(Value::Number(a_num.unwrap() + b_num.unwrap()));
+                    } else {
+                        let a_str = a.cast_to_str();
+                        let b_str = b.cast_to_str();
+                        if a_str.is_some() && b_str.is_some() {
+                            // handle string concatenation
+                            self.stack
+                                .push(Value::Object(Box::new(Obj::new_string(format!(
+                                    "{}{}",
+                                    a_str.unwrap(),
+                                    b_str.unwrap()
+                                )))));
+                        } else {
+                            return self.runtime_error("Operands must be numbers or strings.");
+                        }
+                    }
+                }
                 Some(OpCode::Sub) => gen_num_binary_op!(self, -),
                 Some(OpCode::Mul) => gen_num_binary_op!(self, *),
                 Some(OpCode::Div) => gen_num_binary_op!(self, /),

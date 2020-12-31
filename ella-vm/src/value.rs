@@ -10,6 +10,25 @@ pub enum Value {
 }
 
 impl Value {
+    /// Attempts to cast the `Value` into a `&str` or `None` if wrong type.
+    pub fn cast_to_str(&self) -> Option<&str> {
+        match self {
+            Self::Object(obj) => match &obj.kind {
+                object::ObjKind::Str(string) => Some(&string),
+                #[allow(unreachable_patterns)] // when new object types are added
+                _ => None,
+            },
+            _ => None,
+        }
+    }
+
+    pub fn cast_to_number(&self) -> Option<f64> {
+        match self {
+            Self::Number(val) => Some(*val),
+            _ => None,
+        }
+    }
+
     fn print_obj(f: &mut fmt::Formatter<'_>, obj: &object::Obj) -> fmt::Result {
         use object::ObjKind;
         match &obj.kind {
