@@ -9,17 +9,19 @@ use ella_parser::{
     lexer::Token,
     visitor::{walk_expr, Visitor},
 };
-use std::rc::Rc;
+use std::{collections::HashMap, rc::Rc};
 
 /// Generate bytecode from an abstract syntax tree.
 pub struct Codegen {
     chunk: Chunk,
+    constant_strings: HashMap<String, Rc<Obj>>,
 }
 
 impl Codegen {
     pub fn new() -> Self {
         Self {
             chunk: Chunk::new(),
+            constant_strings: HashMap::new(),
         }
     }
 
@@ -44,7 +46,14 @@ impl Visitor for Codegen {
                 false => self.chunk.write_chunk(OpCode::LdFalse, 0),
             },
             Expr::StringLit(val) => {
-                let obj = Rc::new(Obj::new_string(val.clone()));
+                let obj = if let Some(obj) = self.constant_strings.get(val) {
+                    // reuse same String
+                    obj.clone()
+                } else {
+                    let obj = Rc::new(Obj::new_string(val.clone()));
+                    self.constant_strings.insert(val.clone(), obj.clone());
+                    obj
+                };
                 let constant = self.chunk.add_constant(Value::Object(obj));
                 self.chunk.write_chunk(OpCode::Ldc, 0);
                 self.chunk.write_chunk(constant, 0);
