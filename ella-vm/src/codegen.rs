@@ -1,12 +1,15 @@
 //! Lowers AST into a `Chunk` (bytecode).
 
+use crate::{
+    chunk::{Chunk, OpCode},
+    value::{object::Obj, Value},
+};
 use ella_parser::{
     ast::Expr,
     lexer::Token,
     visitor::{walk_expr, Visitor},
 };
-
-use crate::{chunk::{Chunk, OpCode}, value::{Value, object::Obj}};
+use std::rc::Rc;
 
 /// Generate bytecode from an abstract syntax tree.
 pub struct Codegen {
@@ -41,9 +44,10 @@ impl Visitor for Codegen {
                 false => self.chunk.write_chunk(OpCode::LdFalse, 0),
             },
             Expr::StringLit(val) => {
-                let constant = self.chunk.add_constant(Value::Object(Box::new(Obj::new_string(val.clone()))));
+                let obj = Rc::new(Obj::new_string(val.clone()));
+                let constant = self.chunk.add_constant(Value::Object(obj));
                 self.chunk.write_chunk(OpCode::Ldc, 0);
-                self.chunk.write_chunk(constant, 0);  
+                self.chunk.write_chunk(constant, 0);
             }
             Expr::Identifier(_) => todo!(),
             Expr::FnCall { ident: _, args: _ } => todo!(),

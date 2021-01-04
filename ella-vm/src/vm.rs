@@ -3,7 +3,7 @@ use crate::{
     value::{object::Obj, Value, ValueArray},
 };
 use num_traits::FromPrimitive;
-use std::ptr;
+use std::rc::Rc;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum InterpretResult {
@@ -17,10 +17,6 @@ pub struct Vm {
     chunk: Chunk,
     /// VM stack.
     stack: ValueArray,
-    /// A single linked list to all the objects.
-    /// When allocating new objects, the `Box` should be leaked and added to the head of this field.
-    /// When the VM is dropped, all the objects in this field should be dropped as well.
-    objects: *mut Obj,
 }
 
 /// Generate vm for binary operator.
@@ -103,12 +99,12 @@ impl Vm {
                         let b_str = b.cast_to_str();
                         if a_str.is_some() && b_str.is_some() {
                             // handle string concatenation
-                            self.stack
-                                .push(Value::Object(Box::new(Obj::new_string(format!(
-                                    "{}{}",
-                                    a_str.unwrap(),
-                                    b_str.unwrap()
-                                )))));
+                            let obj = Rc::new(Obj::new_string(format!(
+                                "{}{}",
+                                a_str.unwrap(),
+                                b_str.unwrap()
+                            )));
+                            self.stack.push(Value::Object(obj));
                         } else {
                             return self.runtime_error("Operands must be numbers or strings.");
                         }
@@ -141,20 +137,7 @@ impl Vm {
             ip: 0, // point to first instruction in chunk.code
             chunk,
             stack: Vec::with_capacity(256),
-            objects: ptr::null_mut(),
         };
         vm.run()
-    }
-}
-
-impl Drop for Vm {
-    fn drop(&mut self) {
-        let mut object = self.objects;
-        while !object.is_null() {
-            let next = unsafe { ptr::read(self.objects).next };
-            eprintln!("Dropping object {:?}", object);
-            unsafe { ptr::drop_in_place(object) };
-            object = next;
-        }
     }
 }

@@ -1,12 +1,13 @@
 pub mod object;
 
 use std::fmt;
+use std::rc::Rc;
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum Value {
     Number(f64),
     Bool(bool),
-    Object(Box<object::Obj>),
+    Object(Rc<object::Obj>),
 }
 
 impl Value {
