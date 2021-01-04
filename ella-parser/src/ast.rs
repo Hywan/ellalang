@@ -38,5 +38,6 @@ pub enum Stmt {
     },
     Block(Vec<Stmt>),
     ExprStmt(Expr),
+    ReturnStmt(Expr),
     Error,
 }
