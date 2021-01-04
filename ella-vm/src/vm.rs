@@ -19,30 +19,6 @@ pub struct Vm {
     stack: ValueArray,
 }
 
-/// Generate vm for binary operator.
-macro_rules! gen_num_binary_op {
-    ($self: ident, $op: tt, $result: path) => {{
-        let b: $crate::value::Value = $self.stack.pop().unwrap();
-        let a: $crate::value::Value = $self.stack.pop().unwrap();
-
-        let a = match a {
-            $crate::value::Value::Number(val) => val,
-            _ => return $self.runtime_error("Operands must be numbers."),
-        };
-
-        let b = match b {
-            $crate::value::Value::Number(val) => val,
-            _ => return $self.runtime_error("Operands must be numbers."),
-        };
-
-        $self.stack.push($result(a $op b));
-    }};
-
-    ($self: ident, $op: tt) => {
-        gen_num_binary_op!($self, $op, $crate::value::Value::Number)
-    }
-}
-
 impl Vm {
     fn read_byte(&mut self) -> u8 {
         let instr = self.chunk.code[self.ip];
@@ -64,6 +40,30 @@ impl Vm {
     }
 
     fn run(&mut self) -> InterpretResult {
+        /// Generate vm for binary operator.
+        macro_rules! gen_num_binary_op {
+            ($self: ident, $op: tt, $result: path) => {{
+                let b: $crate::value::Value = $self.stack.pop().unwrap();
+                let a: $crate::value::Value = $self.stack.pop().unwrap();
+
+                let a = match a {
+                    $crate::value::Value::Number(val) => val,
+                    _ => return $self.runtime_error("Operands must be numbers."),
+                };
+
+                let b = match b {
+                    $crate::value::Value::Number(val) => val,
+                    _ => return $self.runtime_error("Operands must be numbers."),
+                };
+
+                $self.stack.push($result(a $op b));
+            }};
+
+            ($self: ident, $op: tt) => {
+                gen_num_binary_op!($self, $op, $crate::value::Value::Number)
+            }
+        }
+
         loop {
             eprintln!("VM stack: {:?}", self.stack);
             match OpCode::from_u8(self.read_byte()) {
