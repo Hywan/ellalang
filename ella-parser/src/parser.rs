@@ -29,8 +29,21 @@ impl<'a> Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
+    /// Returns an anonymous top level function.
     pub fn parse_program(&mut self) -> Stmt {
-        self.parse_declaration()
+        let mut body = Vec::new();
+        loop {
+            body.push(self.parse_declaration());
+            if matches!(self.current_token, Token::Eof | Token::Error) {
+                break;
+            }
+        }
+
+        Stmt::FnDeclaration {
+            body,
+            ident: "<global>".to_string(),
+            params: Vec::new(),
+        }
     }
 }
 

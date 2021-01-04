@@ -32,6 +32,7 @@ pub enum OpCode {
     Less = 12,
 }
 
+#[derive(Debug, Clone, PartialEq)] // FIXME: remove `PartialEq`.
 pub struct Chunk {
     pub(crate) code: Vec<u8>, // a byte array
     /// Source code positions for each byte in `code`.

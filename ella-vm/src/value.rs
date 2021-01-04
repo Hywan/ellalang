@@ -34,6 +34,7 @@ impl Value {
         use object::ObjKind;
         match &obj.kind {
             ObjKind::Str(str) => write!(f, "{}", str),
+            ObjKind::Fn { ident, .. } => write!(f, "<fn {}>", ident),
         }
     }
 }

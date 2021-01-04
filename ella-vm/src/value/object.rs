@@ -1,8 +1,15 @@
+use crate::chunk::Chunk;
 use std::cmp::Ordering;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ObjKind {
     Str(String),
+    Fn {
+        ident: String,
+        /// Number of arguments that the function accepts.
+        arity: u32,
+        chunk: Chunk,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -29,6 +36,7 @@ impl Drop for Obj {
     fn drop(&mut self) {
         match &self.kind {
             ObjKind::Str(string) => eprintln!("Collecting object {:?}", string),
+            ObjKind::Fn { ident, .. } => eprintln!("Collecting function object {:?}", ident),
         }
     }
 }

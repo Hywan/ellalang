@@ -96,5 +96,18 @@ impl Visitor for Codegen {
 
     fn visit_stmt(&mut self, stmt: &mut Stmt) {
         walk_stmt(self, stmt);
+
+        match stmt {
+            Stmt::LetDeclaration { ident, initializer } => todo!(),
+            Stmt::FnDeclaration {
+                ident,
+                params,
+                body,
+            } => todo!(),
+            Stmt::Block(_) => todo!(),
+            Stmt::ExprStmt(_) => todo!(),
+            Stmt::ReturnStmt(_) => todo!(),
+            Stmt::Error => {}
+        }
     }
 }
