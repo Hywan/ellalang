@@ -1,5 +1,5 @@
+use ella_parser::parser::Parser;
 use ella_parser::visitor::Visitor;
-use ella_parser::{ast::Stmt, parser::Parser};
 use ella_vm::{codegen::Codegen, vm::Vm};
 use std::io::{self, Write};
 
@@ -16,19 +16,16 @@ fn main() {
         let source = input.as_str().into();
         let mut parser = Parser::new(&source);
         let mut ast = parser.parse_program();
-        eprintln!("{:#?}", ast);
+        // eprintln!("{:#?}", ast);
 
         eprintln!("{}", source.errors);
         if source.has_no_errors() {
             let mut codegen = Codegen::new();
-            match &mut ast {
-                Stmt::ExprStmt(expr) => codegen.visit_expr(expr),
-                _ => todo!(),
-            };
+            codegen.visit_stmt(&mut ast);
             let mut chunk = codegen.into_inner_chunk();
+            chunk.write_chunk(ella_vm::chunk::OpCode::Ret, 0);
             eprintln!("{}", chunk);
 
-            chunk.write_chunk(ella_vm::chunk::OpCode::Ret, 0);
             eprintln!("{:?}", Vm::interpret(chunk));
         }
     }

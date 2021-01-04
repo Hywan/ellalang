@@ -1,9 +1,10 @@
 //! Visitor pattern for AST nodes.
 
-use crate::ast::Expr;
+use crate::ast::{Expr, Stmt};
 
 pub trait Visitor {
     fn visit_expr(&mut self, expr: &mut Expr);
+    fn visit_stmt(&mut self, stmt: &mut Stmt);
 }
 
 pub fn walk_expr(visitor: &mut impl Visitor, expr: &mut Expr) {
@@ -23,5 +24,32 @@ pub fn walk_expr(visitor: &mut impl Visitor, expr: &mut Expr) {
         }
         Expr::Unary { op: _, arg } => visitor.visit_expr(arg),
         Expr::Error => {}
+    }
+}
+
+pub fn walk_stmt(visitor: &mut impl Visitor, stmt: &mut Stmt) {
+    /// Iteratively visit all statements in a `Vec<Stmt>`.
+    macro_rules! visit_stmt_list {
+        ($visitor: expr, $body: expr) => {
+            for stmt in $body {
+                Visitor::visit_stmt($visitor, stmt);
+            }
+        };
+    }
+
+    match stmt {
+        Stmt::LetDeclaration {
+            ident: _,
+            initializer,
+        } => visitor.visit_expr(initializer),
+        Stmt::FnDeclaration {
+            ident: _,
+            params: _,
+            body,
+        } => visit_stmt_list!(visitor, body),
+        Stmt::Block(body) => visit_stmt_list!(visitor, body),
+        Stmt::ExprStmt(expr) => visitor.visit_expr(expr),
+        Stmt::ReturnStmt(expr) => visitor.visit_expr(expr),
+        Stmt::Error => {}
     }
 }

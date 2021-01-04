@@ -5,9 +5,9 @@ use crate::{
     value::{object::Obj, Value},
 };
 use ella_parser::{
-    ast::Expr,
+    ast::{Expr, Stmt},
     lexer::Token,
-    visitor::{walk_expr, Visitor},
+    visitor::{walk_expr, walk_stmt, Visitor},
 };
 use std::{collections::HashMap, rc::Rc};
 
@@ -92,5 +92,9 @@ impl Visitor for Codegen {
             },
             Expr::Error => {}
         }
+    }
+
+    fn visit_stmt(&mut self, stmt: &mut Stmt) {
+        walk_stmt(self, stmt);
     }
 }

@@ -114,7 +114,7 @@ impl Vm {
                 Some(OpCode::Mul) => gen_num_binary_op!(self, *),
                 Some(OpCode::Div) => gen_num_binary_op!(self, /),
                 Some(OpCode::Ret) => {
-                    println!("{}", self.stack.pop().unwrap()); // return value
+                    println!("< {}", self.stack.pop().unwrap()); // return value
                     return InterpretResult::Ok;
                 }
                 Some(OpCode::LdTrue) => self.stack.push(Value::Bool(true)),
