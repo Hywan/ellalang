@@ -66,11 +66,11 @@ impl fmt::Display for ErrorReporter {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let errors = self.errors.borrow();
         for error in errors.iter() {
-            write!(
+            writeln!(
                 f,
-                "ERROR: {message} at line {line_number}",
+                "ERROR: {message} at position {position}",
                 message = error.message,
-                line_number = error.span.start
+                position = error.span.start
             )?;
         }
 

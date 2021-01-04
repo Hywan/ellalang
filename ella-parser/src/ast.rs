@@ -24,3 +24,19 @@ pub enum Expr {
     },
     Error,
 }
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Stmt {
+    LetDeclaration {
+        ident: String,
+        initializer: Expr,
+    },
+    FnDeclaration {
+        ident: String,
+        params: Vec<String>,
+        body: Vec<Stmt>,
+    },
+    Block(Vec<Stmt>),
+    ExprStmt(Expr),
+    Error,
+}

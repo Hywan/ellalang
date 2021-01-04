@@ -57,10 +57,14 @@ pub enum Token {
     CloseBrace,
     #[token(",")]
     Comma,
+    #[token(";")]
+    Semi,
 
     // keywords
     #[token("fn")]
     Fn,
+    #[token("let")]
+    Let,
     #[token("return")]
     Return,
 

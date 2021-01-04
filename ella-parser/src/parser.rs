@@ -1,11 +1,13 @@
-use crate::ast::Expr;
+use crate::ast::{Expr, Stmt};
 use crate::lexer::Token;
 use ella_source::{Source, SyntaxError};
 use logos::{Lexer, Logos};
 use std::mem;
 
 mod expr;
+mod stmt;
 pub use expr::*;
+pub use stmt::*;
 
 pub struct Parser<'a> {
     /// Cached token for peeking.
@@ -27,8 +29,8 @@ impl<'a> Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
-    pub fn parse_program(&mut self) -> Expr {
-        self.parse_expr()
+    pub fn parse_program(&mut self) -> Stmt {
+        self.parse_declaration()
     }
 }
 
