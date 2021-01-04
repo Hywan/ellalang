@@ -14,6 +14,7 @@ impl<'a> Parser<'a> {
     pub fn parse_stmt(&mut self) -> Stmt {
         match self.current_token {
             Token::Return => self.parse_return_stmt(),
+            Token::OpenBrace => self.parse_block_stmt(),
             _ => {
                 // expression statement
                 let expr = self.parse_expr();
@@ -22,6 +23,23 @@ impl<'a> Parser<'a> {
                 stmt
             }
         }
+    }
+
+    pub fn parse_block_stmt(&mut self) -> Stmt {
+        self.expect(Token::OpenBrace);
+
+        let mut body = Vec::new();
+        if !self.eat(Token::CloseBrace) {
+            loop {
+                body.push(self.parse_declaration());
+
+                if self.eat(Token::CloseBrace) {
+                    break;
+                }
+            }
+        }
+
+        Stmt::Block(body)
     }
 
     fn parse_let_declaration(&mut self) -> Stmt {
