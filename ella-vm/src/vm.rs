@@ -14,31 +14,53 @@ pub enum InterpretResult {
     RuntimeError { message: String, line: usize },
 }
 
-pub struct Vm {
+struct CallFrame<'a> {
     /// Instruction pointer.
     ip: usize,
-    chunk: Chunk,
-    /// VM stack.
-    stack: ValueArray,
+    chunk: &'a Chunk,
 }
 
-impl Vm {
+pub struct Vm<'a> {
+    /// VM stack.
+    stack: ValueArray,
+    call_stack: Vec<CallFrame<'a>>,
+}
+
+impl<'a> Vm<'a> {
+    fn chunk(&self) -> &Chunk {
+        &self.call_stack.last().unwrap().chunk
+    }
+
+    fn code(&self) -> &[u8] {
+        &self.call_stack.last().unwrap().chunk.code
+    }
+
+    fn ip_mut(&mut self) -> &mut usize {
+        &mut self.call_stack.last_mut().unwrap().ip
+    }
+
+    fn ip(&self) -> usize {
+        self.call_stack.last().unwrap().ip
+    }
+
     fn read_byte(&mut self) -> u8 {
-        let instr = self.chunk.code[self.ip];
-        self.ip += 1;
+        let instr = self.code()[self.ip()];
+        *self.ip_mut() += 1;
         instr
     }
 
     fn read_constant(&mut self) -> Value {
-        let constant = self.chunk.constants[self.chunk.code[self.ip] as usize].clone();
-        self.ip += 1;
+        let constant = self.chunk().constants
+            [self.code()[self.ip()] as usize]
+            .clone();
+        *self.ip_mut() += 1;
         constant
     }
 
     fn runtime_error(&self, message: impl ToString) -> InterpretResult {
         InterpretResult::RuntimeError {
             message: message.to_string(),
-            line: self.chunk.lines[self.ip - 1], // -1 to get the last instruction
+            line: self.chunk().lines[self.ip() - 1], // -1 to get the last instruction
         }
     }
 
@@ -67,7 +89,7 @@ impl Vm {
             }
         }
 
-        while self.ip < self.chunk.code.len() {
+        while self.ip() < self.code().len() {
             match OpCode::from_u8(self.read_byte()) {
                 Some(OpCode::Ldc) => {
                     let constant = self.read_constant();
@@ -157,7 +179,7 @@ impl Vm {
                 None => panic!("Invalid instruction"),
             }
 
-            eprintln!("IP: {}, VM stack: {:?}", self.ip, self.stack);
+            eprintln!("IP: {}, VM stack: {:?}", self.ip(), self.stack);
         }
 
         InterpretResult::Ok
@@ -166,9 +188,11 @@ impl Vm {
     /// Executes the chunk
     pub fn interpret(chunk: Chunk) -> InterpretResult {
         let mut vm = Vm {
-            ip: 0, // point to first instruction in chunk.code
-            chunk,
             stack: Vec::with_capacity(256),
+            call_stack: vec![CallFrame {
+                chunk: &chunk, // global chunk
+                ip: 0,         // start interpreting at first opcode
+            }],
         };
         vm.run()
     }
