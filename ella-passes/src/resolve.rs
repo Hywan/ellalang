@@ -143,7 +143,7 @@ impl<'a> Visitor for Resolver<'a> {
             }
             Stmt::FnDeclaration {
                 ident,
-                params: _,
+                params,
                 body,
             } => {
                 self.add_symbol(ident.clone()); // Add symbol first to allow recursion.
@@ -152,6 +152,11 @@ impl<'a> Visitor for Resolver<'a> {
                 self.current_func_offset = self.resolved_symbols.len() as i32;
 
                 self.enter_scope();
+                // add arguments
+                for param in params {
+                    self.add_symbol(param.clone());
+                }
+
                 for stmt in body {
                     self.visit_stmt(stmt);
                 }

@@ -72,6 +72,12 @@ impl<'a> Vm<'a> {
             }};
         }
 
+        macro_rules! frame {
+            () => {
+                self.call_stack.last().unwrap()
+            };
+        }
+
         /// Generate vm for binary operator.
         macro_rules! gen_num_binary_op {
             ($op: tt, $result: path) => {{
@@ -102,15 +108,23 @@ impl<'a> Vm<'a> {
                     let constant = read_constant!();
                     self.stack.push(constant);
                 }
-                Some(OpCode::Ldloc) => {
-                    let local_index =
-                        read_byte!() + self.call_stack.last().unwrap().frame_pointer as u8;
+                Some(OpCode::LdLoc) => {
+                    let local_index = read_byte!() + frame!().frame_pointer as u8;
                     let local = self.stack[local_index as usize].clone();
                     self.stack.push(local);
                 }
-                Some(OpCode::Stloc) => {
-                    let local_index =
-                        read_byte!() + self.call_stack.last().unwrap().frame_pointer as u8;
+                Some(OpCode::StLoc) => {
+                    let local_index = read_byte!() + frame!().frame_pointer as u8;
+                    let value = self.stack.pop().unwrap();
+                    self.stack[local_index as usize] = value;
+                }
+                Some(OpCode::LdArg) => {
+                    let local_index = read_byte!() + frame!().frame_pointer as u8;
+                    let local = self.stack[local_index as usize].clone();
+                    self.stack.push(local);
+                }
+                Some(OpCode::StArg) => {
+                    let local_index = read_byte!() + frame!().frame_pointer as u8;
                     let value = self.stack.pop().unwrap();
                     self.stack[local_index as usize] = value;
                 }
@@ -193,20 +207,16 @@ impl<'a> Vm<'a> {
 
                                 if arity != calli_arity as u32 {
                                     return self.runtime_error(format!(
-                                        "Expected {} arguments, received {}.",
+                                        "Expected {} argument(s), received {}.",
                                         arity, calli_arity
                                     ));
-                                }
-
-                                for _i in 0..calli_arity {
-                                    self.stack.pop().unwrap(); // arguments
                                 }
 
                                 // add new `CallFrame` to call stack
                                 self.call_stack.push(CallFrame {
                                     ip: 0,
                                     chunk: chunk.clone(),
-                                    frame_pointer: self.stack.len(),
+                                    frame_pointer: self.stack.len() - arity as usize,
                                 });
                             }
                             _ => return self.runtime_error("Value is not a function."),

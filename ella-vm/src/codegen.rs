@@ -112,7 +112,7 @@ impl<'a> Visitor for Codegen<'a> {
                     .resolved_symbol_table
                     .get(&(expr as *const Expr))
                     .unwrap();
-                self.chunk.write_chunk(OpCode::Ldloc, 0);
+                self.chunk.write_chunk(OpCode::LdLoc, 0);
                 self.chunk.write_chunk(offset as u8, 0);
             }
             Expr::FnCall { ident: _, args } => {
@@ -121,7 +121,7 @@ impl<'a> Visitor for Codegen<'a> {
                     .resolved_symbol_table
                     .get(&(expr as *const Expr))
                     .unwrap();
-                self.chunk.write_chunk(OpCode::Ldloc, 0);
+                self.chunk.write_chunk(OpCode::LdLoc, 0);
                 self.chunk.write_chunk(offset as u8, 0);
                 self.chunk.write_chunk(OpCode::Calli, 0);
                 self.chunk.write_chunk(arity, 0);
@@ -136,7 +136,7 @@ impl<'a> Visitor for Codegen<'a> {
                         .resolved_symbol_table
                         .get(&(lhs.as_ref() as *const Expr))
                         .unwrap();
-                    self.chunk.write_chunk(OpCode::Stloc, 0);
+                    self.chunk.write_chunk(OpCode::StLoc, 0);
                     self.chunk.write_chunk(offset as u8, 0);
                 }
                 Token::EqualsEquals => self.chunk.write_chunk(OpCode::Eq, 0),

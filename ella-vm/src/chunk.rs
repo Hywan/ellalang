@@ -10,10 +10,16 @@ pub enum OpCode {
     Ldc = 0,
     /// Load a local variable onto the stack.
     /// *2 bytes (1 operand)*
-    Ldloc = 15,
+    LdLoc = 15,
     /// Stores the top value on the stack into a local variable.
     /// *2 bytes (1 operand)*
-    Stloc = 16,
+    StLoc = 16,
+    /// Load an argument onto the stack.
+    /// *2 bytes (1 operand)*
+    LdArg = 17,
+    /// Store the top value on the stack into an argument variable.
+    /// *2 bytes (1 operand)*
+    StArg = 18,
     /// Negate the last value on the stack.
     /// *1 byte*
     Neg = 1,
@@ -78,7 +84,7 @@ impl Chunk {
             code: Vec::new(),
             lines: Vec::new(),
             constants: ValueArray::new(),
-            name
+            name,
         }
     }
 

@@ -25,7 +25,6 @@ fn main() {
         let mut resolver = Resolver::new_with_existing_symbols(&source, resolved_symbols.clone());
         resolver.resolve_top_level(&mut ast);
         let resolved_symbol_table = resolver.resolved_symbol_table();
-        dbg!(resolved_symbol_table);
 
         eprintln!("{}", source.errors);
         if source.has_no_errors() {
