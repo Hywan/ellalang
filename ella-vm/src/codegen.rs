@@ -114,7 +114,7 @@ impl Visitor for Codegen {
                 Token::Minus => self.chunk.write_chunk(OpCode::Neg, 0),
                 _ => unreachable!(),
             },
-            Expr::Error => {}
+            Expr::Error => unreachable!()
         }
     }
 
@@ -124,8 +124,10 @@ impl Visitor for Codegen {
         match stmt {
             Stmt::LetDeclaration {
                 ident: _,
-                initializer: _,
-            } => todo!(),
+                initializer,
+            } => {
+                self.visit_expr(initializer); // Push value of expression onto top of stack.
+            }
             Stmt::FnDeclaration {
                 ident,
                 params,
@@ -152,7 +154,11 @@ impl Visitor for Codegen {
                 self.chunk.write_chunk(OpCode::Ldc, 0);
                 self.chunk.write_chunk(constant, 0);
             }
-            Stmt::Block(_) => todo!(),
+            Stmt::Block(body) => {
+                for stmt in body {
+                    self.visit_stmt(stmt);
+                }
+            }
             Stmt::ExprStmt(expr) => {
                 self.visit_expr(expr);
                 self.chunk.write_chunk(OpCode::Pop, 0);
@@ -161,7 +167,7 @@ impl Visitor for Codegen {
                 self.visit_expr(expr);
                 self.chunk.write_chunk(OpCode::Ret, 0);
             }
-            Stmt::Error => {}
+            Stmt::Error => unreachable!()
         }
     }
 }

@@ -59,6 +59,8 @@ impl Chunk {
         // If not a valid OpCode, none of the branches should match and thus cause an error.
         match OpCode::from_u8(instr) {
             Some(OpCode::Ldc) => self.constant_instr(f, "ldc", offset),
+            Some(OpCode::Ldloc) => self.constant_instr(f, "ldloc", offset),
+            Some(OpCode::Stloc) => self.constant_instr(f, "stloc", offset),
             Some(OpCode::Neg) => self.simple_instr(f, "neg", offset),
             Some(OpCode::Not) => self.simple_instr(f, "not", offset),
             Some(OpCode::Add) => self.simple_instr(f, "add", offset),

@@ -100,6 +100,16 @@ impl<'a> Vm<'a> {
                     let constant = read_constant!();
                     self.stack.push(constant);
                 }
+                Some(OpCode::Ldloc) => {
+                    let local_index = read_byte!();
+                    let local = self.stack[local_index as usize].clone();
+                    self.stack.push(local);
+                }
+                Some(OpCode::Stloc) => {
+                    let local_index = read_byte!();
+                    let value = self.stack.pop().unwrap();
+                    self.stack[local_index as usize] = value;
+                }
                 Some(OpCode::Neg) => {
                     let val = self.stack.pop().unwrap();
                     match val {

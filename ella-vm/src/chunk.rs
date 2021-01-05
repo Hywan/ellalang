@@ -8,6 +8,12 @@ pub enum OpCode {
     /// Load a constant onto the stack.
     /// *2 bytes (1 operand)*
     Ldc = 0,
+    /// Load a local variable onto the stack.
+    /// *2 bytes (1 operand)*
+    Ldloc = 15,
+    /// Stores the top value on the stack into a local variable.
+    /// *2 bytes (1 operand)*
+    Stloc = 16,
     /// Negate the last value on the stack.
     /// *1 byte*
     Neg = 1,
