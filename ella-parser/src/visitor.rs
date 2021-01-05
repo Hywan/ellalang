@@ -2,9 +2,13 @@
 
 use crate::ast::{Expr, Stmt};
 
-pub trait Visitor {
-    fn visit_expr(&mut self, expr: &mut Expr);
-    fn visit_stmt(&mut self, stmt: &mut Stmt);
+pub trait Visitor: Sized {
+    fn visit_expr(&mut self, expr: &mut Expr) {
+        walk_expr(self, expr);
+    }
+    fn visit_stmt(&mut self, stmt: &mut Stmt) {
+        walk_stmt(self, stmt);
+    }
 }
 
 pub fn walk_expr(visitor: &mut impl Visitor, expr: &mut Expr) {

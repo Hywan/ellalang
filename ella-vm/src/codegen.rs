@@ -12,21 +12,24 @@ use ella_parser::{
     lexer::Token,
     visitor::{walk_expr, Visitor},
 };
+use ella_passes::resolve::ResolvedSymbolTable;
 use std::{collections::HashMap, rc::Rc};
 
 const DUMP_CHUNK: bool = true;
 
 /// Generate bytecode from an abstract syntax tree.
-pub struct Codegen {
+pub struct Codegen<'a> {
     chunk: Chunk,
     constant_strings: HashMap<String, Rc<Obj>>,
+    resolved_symbol_table: &'a ResolvedSymbolTable,
 }
 
-impl Codegen {
-    pub fn new(name: String) -> Self {
+impl<'a> Codegen<'a> {
+    pub fn new(name: String, resolved_symbol_table: &'a ResolvedSymbolTable) -> Self {
         Self {
             chunk: Chunk::new(name),
             constant_strings: HashMap::new(),
+            resolved_symbol_table,
         }
     }
 
@@ -55,7 +58,7 @@ impl Codegen {
     }
 }
 
-impl Visitor for Codegen {
+impl<'a> Visitor for Codegen<'a> {
     fn visit_expr(&mut self, expr: &mut Expr) {
         walk_expr(self, expr);
 
@@ -82,14 +85,28 @@ impl Visitor for Codegen {
                 self.chunk.write_chunk(OpCode::Ldc, 0);
                 self.chunk.write_chunk(constant, 0);
             }
-            Expr::Identifier(_) => todo!(),
+            Expr::Identifier(_) => {
+                let offset = *self
+                    .resolved_symbol_table
+                    .get(&(expr as *const Expr))
+                    .unwrap();
+                self.chunk.write_chunk(OpCode::Ldloc, 0);
+                self.chunk.write_chunk(offset as u8, 0);
+            }
             Expr::FnCall { ident: _, args: _ } => todo!(),
-            Expr::Binary { op, .. } => match op {
+            Expr::Binary { lhs, op, rhs: _ } => match op {
                 Token::Plus => self.chunk.write_chunk(OpCode::Add, 0),
                 Token::Minus => self.chunk.write_chunk(OpCode::Sub, 0),
                 Token::Asterisk => self.chunk.write_chunk(OpCode::Mul, 0),
                 Token::Slash => self.chunk.write_chunk(OpCode::Div, 0),
-                Token::Equals => todo!(),
+                Token::Equals => {
+                    let offset = *self
+                        .resolved_symbol_table
+                        .get(&(lhs.as_ref() as *const Expr))
+                        .unwrap();
+                    self.chunk.write_chunk(OpCode::Stloc, 0);
+                    self.chunk.write_chunk(offset as u8, 0);
+                }
                 Token::EqualsEquals => self.chunk.write_chunk(OpCode::Eq, 0),
                 Token::NotEquals => {
                     self.chunk.write_chunk(OpCode::Eq, 0);
@@ -114,7 +131,7 @@ impl Visitor for Codegen {
                 Token::Minus => self.chunk.write_chunk(OpCode::Neg, 0),
                 _ => unreachable!(),
             },
-            Expr::Error => unreachable!()
+            Expr::Error => unreachable!(),
         }
     }
 
@@ -138,7 +155,7 @@ impl Visitor for Codegen {
 
                 // Create a new `Codegen` instance, codegen the function, and add the chunk to the `ObjKind::Fn`.
                 let func_chunk = {
-                    let mut cg = Codegen::new(ident.clone());
+                    let mut cg = Codegen::new(ident.clone(), self.resolved_symbol_table);
                     cg.codegen_function(stmt);
                     cg.into_inner_chunk()
                 };
@@ -167,7 +184,7 @@ impl Visitor for Codegen {
                 self.visit_expr(expr);
                 self.chunk.write_chunk(OpCode::Ret, 0);
             }
-            Stmt::Error => unreachable!()
+            Stmt::Error => unreachable!(),
         }
     }
 }

@@ -1,4 +1,6 @@
 use ella_parser::parser::Parser;
+use ella_parser::visitor::Visitor;
+use ella_passes::resolve::Resolver;
 use ella_vm::{codegen::Codegen, vm::Vm};
 use std::io::{self, Write};
 
@@ -17,9 +19,14 @@ fn main() {
         let mut ast = parser.parse_program();
         // eprintln!("{:#?}", ast);
 
+        let mut resolver = Resolver::new(&source);
+        resolver.visit_stmt(&mut ast);
+        let resolved_symbol_table = resolver.resolved_symbol_table();
+        dbg!(resolved_symbol_table);
+
         eprintln!("{}", source.errors);
         if source.has_no_errors() {
-            let mut codegen = Codegen::new("<global>".to_string());
+            let mut codegen = Codegen::new("<global>".to_string(), resolved_symbol_table);
             codegen.codegen_function(&mut ast);
             let chunk = codegen.into_inner_chunk();
 

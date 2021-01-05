@@ -2,6 +2,7 @@
 members = [
   "ella",
   "ella-parser",
+  "ella-passes",
   "ella-source",
   "ella-vm",
 ]
