@@ -246,6 +246,14 @@ impl<'a> Vm<'a> {
 
         self.run()
     }
+
+    pub fn stack(&self) -> &ValueArray {
+        &self.stack
+    }
+
+    pub fn restore_stack(&mut self, stack: ValueArray) {
+        self.stack = stack;
+    }
 }
 
 #[cfg(test)]

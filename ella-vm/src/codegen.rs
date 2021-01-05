@@ -116,10 +116,6 @@ impl<'a> Visitor for Codegen<'a> {
                 self.chunk.write_chunk(offset as u8, 0);
             }
             Expr::FnCall { ident: _, args } => {
-                for arg in args.iter_mut() {
-                    self.visit_expr(arg);
-                }
-
                 let arity = args.len() as u8;
                 let offset = *self
                     .resolved_symbol_table
