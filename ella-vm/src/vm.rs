@@ -1,6 +1,9 @@
 use crate::{
     chunk::{Chunk, OpCode},
-    value::{object::Obj, Value, ValueArray},
+    value::{
+        object::{Obj, ObjKind},
+        Value, ValueArray,
+    },
 };
 use num_traits::FromPrimitive;
 use std::rc::Rc;
@@ -64,8 +67,7 @@ impl Vm {
             }
         }
 
-        loop {
-            eprintln!("VM stack: {:?}", self.stack);
+        while self.ip < self.chunk.code.len() {
             match OpCode::from_u8(self.read_byte()) {
                 Some(OpCode::Ldc) => {
                     let constant = self.read_constant();
@@ -126,9 +128,39 @@ impl Vm {
                 }
                 Some(OpCode::Greater) => gen_num_binary_op!(self, >, Value::Bool),
                 Some(OpCode::Less) => gen_num_binary_op!(self, <, Value::Bool),
+                Some(OpCode::Pop) => {
+                    self.stack.pop().unwrap(); // throw away result
+                }
+                Some(OpCode::Calli) => {
+                    match self.stack.pop().unwrap() {
+                        Value::Object(obj) => match obj.kind {
+                            ObjKind::Fn { arity, .. } => {
+                                // execute the function
+                                let calli_arity = self.read_byte();
+
+                                if arity != calli_arity as u32 {
+                                    return self.runtime_error(format!(
+                                        "Expected {} arguments, received {}.",
+                                        arity, calli_arity
+                                    ));
+                                }
+
+                                for _i in 0..calli_arity {
+                                    self.stack.pop().unwrap(); // arguments
+                                }
+                            }
+                            _ => return self.runtime_error("Value is not a function."),
+                        },
+                        _ => return self.runtime_error("Value is not a function."),
+                    }
+                }
                 None => panic!("Invalid instruction"),
             }
+
+            eprintln!("IP: {}, VM stack: {:?}", self.ip, self.stack);
         }
+
+        InterpretResult::Ok
     }
 
     /// Executes the chunk

@@ -6,7 +6,7 @@ use enum_primitive_derive::Primitive;
 #[repr(u8)]
 pub enum OpCode {
     /// Load a constant onto the stack.
-    /// *1 operand (2 bytes)*
+    /// *2 bytes (1 operand)*
     Ldc = 0,
     /// Negate the last value on the stack.
     /// *1 byte*
@@ -30,6 +30,13 @@ pub enum OpCode {
     Eq = 10,
     Greater = 11,
     Less = 12,
+    /// Pops and disposes the last value on the stack.
+    /// *1 byte*
+    Pop = 13,
+    /// Calls the function on the top of the stack.
+    /// To load the function, use `ldc` to load a function object.
+    /// *1 byte*
+    Calli = 14,
 }
 
 #[derive(Debug, Clone, PartialEq)] // FIXME: remove `PartialEq`.

@@ -1,6 +1,5 @@
 use ella_parser::parser::Parser;
-use ella_parser::visitor::Visitor;
-use ella_vm::{codegen::Codegen, vm::Vm};
+use ella_vm::{chunk::OpCode, codegen::Codegen, vm::Vm};
 use std::io::{self, Write};
 
 fn main() {
@@ -21,9 +20,8 @@ fn main() {
         eprintln!("{}", source.errors);
         if source.has_no_errors() {
             let mut codegen = Codegen::new();
-            codegen.visit_stmt(&mut ast);
-            let mut chunk = codegen.into_inner_chunk();
-            chunk.write_chunk(ella_vm::chunk::OpCode::Ret, 0);
+            codegen.codegen_function(&mut ast);
+            let chunk = codegen.into_inner_chunk();
             eprintln!("{}", chunk);
 
             eprintln!("{:?}", Vm::interpret(chunk));

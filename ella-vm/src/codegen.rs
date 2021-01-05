@@ -2,7 +2,10 @@
 
 use crate::{
     chunk::{Chunk, OpCode},
-    value::{object::Obj, Value},
+    value::{
+        object::{Obj, ObjKind},
+        Value,
+    },
 };
 use ella_parser::{
     ast::{Expr, Stmt},
@@ -25,9 +28,24 @@ impl Codegen {
         }
     }
 
-    /// Consumes `self` and returns the generated `chunk`.
+    /// Consumes `self` and returns the generated [`Chunk`].
+    #[must_use]
     pub fn into_inner_chunk(self) -> Chunk {
         self.chunk
+    }
+
+    /// Returns the chunk for the top-level function.
+    /// Do not use [`Visitor::visit_stmt`] to codegen a function as it will create a separate [`Chunk`].
+    /// To get the generated [`Chunk`], call [`Codegen::into_inner_chunk`].
+    pub fn codegen_function(&mut self, func: &mut Stmt) {
+        match func {
+            Stmt::FnDeclaration { body, .. } => {
+                for stmt in body {
+                    self.visit_stmt(stmt);
+                }
+            }
+            _ => panic!("func is not a Stmt::FnDeclaration"),
+        }
     }
 }
 
@@ -95,17 +113,41 @@ impl Visitor for Codegen {
     }
 
     fn visit_stmt(&mut self, stmt: &mut Stmt) {
-        walk_stmt(self, stmt);
+        // Do not use default walking logic.
 
         match stmt {
             Stmt::LetDeclaration { ident, initializer } => todo!(),
             Stmt::FnDeclaration {
                 ident,
                 params,
-                body,
-            } => todo!(),
+                body: _, // Body is codegen in a new `Codegen` instance.
+            } => {
+                let ident = ident.clone();
+                let arity = params.len() as u32;
+
+                // Create a new `Codegen` instance, codegen the function, and add the chunk to the `ObjKind::Fn`.
+                let func_chunk = {
+                    let mut cg = Codegen::new();
+                    cg.codegen_function(stmt);
+                    cg.into_inner_chunk()
+                };
+
+                let func = Rc::new(Obj {
+                    kind: ObjKind::Fn {
+                        ident,
+                        arity,
+                        chunk: func_chunk,
+                    },
+                });
+                let constant = self.chunk.add_constant(Value::Object(func));
+                self.chunk.write_chunk(OpCode::Ldc, 0);
+                self.chunk.write_chunk(constant, 0);
+            }
             Stmt::Block(_) => todo!(),
-            Stmt::ExprStmt(_) => todo!(),
+            Stmt::ExprStmt(expr) => {
+                self.visit_expr(expr);
+                self.chunk.write_chunk(OpCode::Pop, 0);
+            },
             Stmt::ReturnStmt(_) => todo!(),
             Stmt::Error => {}
         }

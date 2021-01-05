@@ -26,6 +26,18 @@ impl Chunk {
         Ok(offset + 2)
     }
 
+    /// Disassemble calli (2 bytes) instruction.
+    fn calli_instr(
+        &self,
+        f: &mut fmt::Formatter<'_>,
+        name: &str,
+        offset: usize,
+    ) -> Result<usize, fmt::Error> {
+        let arity = self.code[offset + 1];
+        writeln!(f, "{:<5} {}", name, arity)?;
+        Ok(offset + 2)
+    }
+
     /// Disassembles the instruction at the `offset`.
     fn disassemble_instr(
         &self,
@@ -59,6 +71,8 @@ impl Chunk {
             Some(OpCode::Eq) => self.simple_instr(f, "eq", offset),
             Some(OpCode::Greater) => self.simple_instr(f, "greater", offset),
             Some(OpCode::Less) => self.simple_instr(f, "less", offset),
+            Some(OpCode::Pop) => self.simple_instr(f, "pop", offset),
+            Some(OpCode::Calli) => self.calli_instr(f, "calli", offset),
             None => self.simple_instr(f, "invalid", offset), // skip bad instruction
         } // returns the next ip
     }
