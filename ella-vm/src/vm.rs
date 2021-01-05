@@ -6,6 +6,7 @@ use crate::{
     },
 };
 use num_traits::FromPrimitive;
+use std::marker::PhantomData;
 use std::rc::Rc;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -14,16 +15,17 @@ pub enum InterpretResult {
     RuntimeError { message: String, line: usize },
 }
 
-struct CallFrame<'a> {
+struct CallFrame {
     /// Instruction pointer.
     ip: usize,
-    chunk: &'a Chunk,
+    chunk: Chunk,
 }
 
 pub struct Vm<'a> {
     /// VM stack.
     stack: ValueArray,
-    call_stack: Vec<CallFrame<'a>>,
+    call_stack: Vec<CallFrame>,
+    phantom: PhantomData<&'a ()>,
 }
 
 impl<'a> Vm<'a> {
@@ -43,18 +45,6 @@ impl<'a> Vm<'a> {
         self.call_stack.last().unwrap().ip
     }
 
-    fn read_byte(&mut self) -> u8 {
-        let instr = self.code()[self.ip()];
-        *self.ip_mut() += 1;
-        instr
-    }
-
-    fn read_constant(&mut self) -> Value {
-        let constant = self.chunk().constants[self.code()[self.ip()] as usize].clone();
-        *self.ip_mut() += 1;
-        constant
-    }
-
     fn runtime_error(&self, message: impl ToString) -> InterpretResult {
         InterpretResult::RuntimeError {
             message: message.to_string(),
@@ -63,34 +53,51 @@ impl<'a> Vm<'a> {
     }
 
     fn run(&mut self) -> InterpretResult {
+        macro_rules! read_byte {
+            () => {{
+                let instr: u8 = self.code()[self.ip()];
+                *self.ip_mut() += 1;
+                instr
+            }};
+        }
+
+        macro_rules! read_constant {
+            () => {{
+                let constant: Value =
+                    self.chunk().constants[self.code()[self.ip()] as usize].clone();
+                *self.ip_mut() += 1;
+                constant
+            }};
+        }
+
         /// Generate vm for binary operator.
         macro_rules! gen_num_binary_op {
-            ($self: ident, $op: tt, $result: path) => {{
-                let b: $crate::value::Value = $self.stack.pop().unwrap();
-                let a: $crate::value::Value = $self.stack.pop().unwrap();
+            ($op: tt, $result: path) => {{
+                let b: $crate::value::Value = self.stack.pop().unwrap();
+                let a: $crate::value::Value = self.stack.pop().unwrap();
 
                 let a = match a {
                     $crate::value::Value::Number(val) => val,
-                    _ => return $self.runtime_error("Operands must be numbers."),
+                    _ => return self.runtime_error("Operands must be numbers."),
                 };
 
                 let b = match b {
                     $crate::value::Value::Number(val) => val,
-                    _ => return $self.runtime_error("Operands must be numbers."),
+                    _ => return self.runtime_error("Operands must be numbers."),
                 };
 
-                $self.stack.push($result(a $op b));
+                self.stack.push($result(a $op b));
             }};
 
-            ($self: ident, $op: tt) => {
-                gen_num_binary_op!($self, $op, $crate::value::Value::Number)
+            ($op: tt) => {
+                gen_num_binary_op!($op, $crate::value::Value::Number)
             }
         }
 
         while self.ip() < self.code().len() {
-            match OpCode::from_u8(self.read_byte()) {
+            match OpCode::from_u8(read_byte!()) {
                 Some(OpCode::Ldc) => {
-                    let constant = self.read_constant();
+                    let constant = read_constant!();
                     self.stack.push(constant);
                 }
                 Some(OpCode::Neg) => {
@@ -132,9 +139,9 @@ impl<'a> Vm<'a> {
                         }
                     }
                 }
-                Some(OpCode::Sub) => gen_num_binary_op!(self, -),
-                Some(OpCode::Mul) => gen_num_binary_op!(self, *),
-                Some(OpCode::Div) => gen_num_binary_op!(self, /),
+                Some(OpCode::Sub) => gen_num_binary_op!(-),
+                Some(OpCode::Mul) => gen_num_binary_op!(*),
+                Some(OpCode::Div) => gen_num_binary_op!(/),
                 Some(OpCode::Ret) => {
                     if self.call_stack.len() <= 1 {
                         return self.runtime_error("Can only use return in a function.");
@@ -148,17 +155,21 @@ impl<'a> Vm<'a> {
                     let a = self.stack.pop().unwrap();
                     self.stack.push(Value::Bool(a == b));
                 }
-                Some(OpCode::Greater) => gen_num_binary_op!(self, >, Value::Bool),
-                Some(OpCode::Less) => gen_num_binary_op!(self, <, Value::Bool),
+                Some(OpCode::Greater) => gen_num_binary_op!(>, Value::Bool),
+                Some(OpCode::Less) => gen_num_binary_op!(<, Value::Bool),
                 Some(OpCode::Pop) => {
                     self.stack.pop().unwrap(); // throw away result
                 }
                 Some(OpCode::Calli) => {
                     match self.stack.pop().unwrap() {
                         Value::Object(obj) => match obj.kind {
-                            ObjKind::Fn { arity, .. } => {
+                            ObjKind::Fn {
+                                ident: _,
+                                arity,
+                                ref chunk,
+                            } => {
                                 // execute the function
-                                let calli_arity = self.read_byte();
+                                let calli_arity = read_byte!();
 
                                 if arity != calli_arity as u32 {
                                     return self.runtime_error(format!(
@@ -170,6 +181,12 @@ impl<'a> Vm<'a> {
                                 for _i in 0..calli_arity {
                                     self.stack.pop().unwrap(); // arguments
                                 }
+
+                                // add new `CallFrame` to call stack
+                                self.call_stack.push(CallFrame {
+                                    ip: 0,
+                                    chunk: chunk.clone(),
+                                });
                             }
                             _ => return self.runtime_error("Value is not a function."),
                         },
@@ -190,9 +207,10 @@ impl<'a> Vm<'a> {
         let mut vm = Vm {
             stack: Vec::with_capacity(256),
             call_stack: vec![CallFrame {
-                chunk: &chunk, // global chunk
-                ip: 0,         // start interpreting at first opcode
+                ip: 0,        // start interpreting at first opcode
+                chunk: chunk, // global chunk
             }],
+            phantom: PhantomData,
         };
         vm.run()
     }

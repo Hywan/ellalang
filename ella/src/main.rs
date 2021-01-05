@@ -21,7 +21,9 @@ fn main() {
         if source.has_no_errors() {
             let mut codegen = Codegen::new();
             codegen.codegen_function(&mut ast);
-            let chunk = codegen.into_inner_chunk();
+            let mut chunk = codegen.into_inner_chunk();
+            chunk.write_chunk(OpCode::Calli, 0);
+            chunk.write_chunk(0, 0);
             eprintln!("{}", chunk);
 
             eprintln!("{:?}", Vm::interpret(chunk));
