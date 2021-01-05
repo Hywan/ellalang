@@ -80,7 +80,7 @@ impl Chunk {
 
 impl fmt::Display for Chunk {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "== {} ==", "chunk")?;
+        writeln!(f, "== {} ==", self.name)?;
 
         let mut offset = 0;
         while offset < self.code.len() {

@@ -10,9 +10,11 @@ use crate::{
 use ella_parser::{
     ast::{Expr, Stmt},
     lexer::Token,
-    visitor::{walk_expr, walk_stmt, Visitor},
+    visitor::{walk_expr, Visitor},
 };
 use std::{collections::HashMap, rc::Rc};
+
+const DUMP_CHUNK: bool = true;
 
 /// Generate bytecode from an abstract syntax tree.
 pub struct Codegen {
@@ -21,9 +23,9 @@ pub struct Codegen {
 }
 
 impl Codegen {
-    pub fn new() -> Self {
+    pub fn new(name: String) -> Self {
         Self {
-            chunk: Chunk::new(),
+            chunk: Chunk::new(name),
             constant_strings: HashMap::new(),
         }
     }
@@ -42,6 +44,10 @@ impl Codegen {
             Stmt::FnDeclaration { body, .. } => {
                 for stmt in body {
                     self.visit_stmt(stmt);
+                }
+
+                if DUMP_CHUNK {
+                    eprintln!("{}", self.chunk);
                 }
             }
             _ => panic!("func is not a Stmt::FnDeclaration"),
@@ -116,7 +122,10 @@ impl Visitor for Codegen {
         // Do not use default walking logic.
 
         match stmt {
-            Stmt::LetDeclaration { ident, initializer } => todo!(),
+            Stmt::LetDeclaration {
+                ident: _,
+                initializer: _,
+            } => todo!(),
             Stmt::FnDeclaration {
                 ident,
                 params,
@@ -127,7 +136,7 @@ impl Visitor for Codegen {
 
                 // Create a new `Codegen` instance, codegen the function, and add the chunk to the `ObjKind::Fn`.
                 let func_chunk = {
-                    let mut cg = Codegen::new();
+                    let mut cg = Codegen::new(ident.clone());
                     cg.codegen_function(stmt);
                     cg.into_inner_chunk()
                 };
@@ -147,11 +156,11 @@ impl Visitor for Codegen {
             Stmt::ExprStmt(expr) => {
                 self.visit_expr(expr);
                 self.chunk.write_chunk(OpCode::Pop, 0);
-            },
+            }
             Stmt::ReturnStmt(expr) => {
                 self.visit_expr(expr);
                 self.chunk.write_chunk(OpCode::Ret, 0);
-            },
+            }
             Stmt::Error => {}
         }
     }

@@ -45,6 +45,7 @@ pub struct Chunk {
     /// Source code positions for each byte in `code`.
     pub(crate) lines: Vec<usize>,
     pub(crate) constants: ValueArray,
+    pub(crate) name: String,
 }
 
 /// `u8` and `OpCode` should implement this trait.
@@ -65,11 +66,12 @@ impl ToByteCode for u8 {
 }
 
 impl Chunk {
-    pub fn new() -> Self {
+    pub fn new(name: String) -> Self {
         Self {
             code: Vec::new(),
             lines: Vec::new(),
             constants: ValueArray::new(),
+            name
         }
     }
 
@@ -90,11 +92,5 @@ impl Chunk {
             todo!("load constant wide");
         }
         loc as u8
-    }
-}
-
-impl Default for Chunk {
-    fn default() -> Self {
-        Self::new()
     }
 }

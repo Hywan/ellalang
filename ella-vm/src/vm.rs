@@ -223,11 +223,11 @@ mod tests {
     #[test]
     fn new_call_frame() {
         let cf = CallFrame {
-            chunk: Chunk::new(),
+            chunk: Chunk::new("test".to_string()),
             ip: 0,
         };
 
-        assert_eq!(cf.chunk, Chunk::new());
+        assert_eq!(cf.chunk, Chunk::new("test".to_string()));
         assert_eq!(cf.ip, 0);
     }
 }
