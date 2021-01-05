@@ -9,7 +9,7 @@ use ella_source::{Source, SyntaxError};
 
 /// Represents a resolved symbol.
 #[derive(Debug, Clone, PartialEq)]
-struct ResolvedSymbol {
+pub struct ResolvedSymbol {
     ident: String,
     scope_depth: u32,
 }
@@ -35,9 +35,23 @@ impl<'a> Resolver<'a> {
         }
     }
 
+    pub fn new_with_existing_symbols(
+        source: &'a Source,
+        resolved_symbols: Vec<ResolvedSymbol>,
+    ) -> Self {
+        Self {
+            resolved_symbols,
+            ..Self::new(source)
+        }
+    }
+
     /// Returns a [`HashMap`] mapping all [`Expr::Identifier`] to variable offsets.
     pub fn resolved_symbol_table(&self) -> &ResolvedSymbolTable {
         &self.variable_offsets
+    }
+
+    pub fn into_resolved_symbols(self) -> Vec<ResolvedSymbol> {
+        self.resolved_symbols
     }
 
     fn enter_scope(&mut self) {
@@ -79,6 +93,17 @@ impl<'a> Resolver<'a> {
             span,
         ));
         -1
+    }
+
+    pub fn resolve_top_level(&mut self, func: &mut Stmt) {
+        match func {
+            Stmt::FnDeclaration { body, .. } => {
+                for stmt in body {
+                    self.visit_stmt(stmt);
+                }
+            }
+            _ => panic!("func is not a Stmt::FnDeclaration"),
+        }
     }
 }
 

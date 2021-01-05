@@ -212,17 +212,22 @@ impl<'a> Vm<'a> {
         InterpretResult::Ok
     }
 
-    /// Executes the chunk
-    pub fn interpret(chunk: Chunk) -> InterpretResult {
-        let mut vm = Vm {
+    pub fn new() -> Self {
+        Self {
             stack: Vec::with_capacity(256),
-            call_stack: vec![CallFrame {
-                ip: 0,        // start interpreting at first opcode
-                chunk: chunk, // global chunk
-            }],
+            call_stack: Vec::new(),
             phantom: PhantomData,
-        };
-        vm.run()
+        }
+    }
+
+    /// Executes the chunk
+    pub fn interpret(&mut self, chunk: Chunk) -> InterpretResult {
+        self.call_stack.push(CallFrame {
+            ip: 0, // start interpreting at first opcode
+            chunk, // global chunk
+        });
+
+        self.run()
     }
 }
 
