@@ -22,6 +22,9 @@ pub struct Codegen<'a> {
     chunk: Chunk,
     constant_strings: HashMap<String, Rc<Obj>>,
     resolved_symbol_table: &'a ResolvedSymbolTable,
+    /// Every time a new scope is created, a new value is pushed onto the stack.
+    /// This is to keep track of how many `pop` instructions to emit when exiting the scope.
+    local_var_counts: Vec<u32>,
 }
 
 impl<'a> Codegen<'a> {
@@ -30,6 +33,7 @@ impl<'a> Codegen<'a> {
             chunk: Chunk::new(name),
             constant_strings: HashMap::new(),
             resolved_symbol_table,
+            local_var_counts: vec![0],
         }
     }
 
@@ -42,18 +46,36 @@ impl<'a> Codegen<'a> {
     /// Returns the chunk for the top-level function.
     /// Do not use [`Visitor::visit_stmt`] to codegen a function as it will create a separate [`Chunk`].
     /// To get the generated [`Chunk`], call [`Codegen::into_inner_chunk`].
+    /// # Params
+    /// * `func` - The function to codegen for.
     pub fn codegen_function(&mut self, func: &mut Stmt) {
         match func {
             Stmt::FnDeclaration { body, .. } => {
                 for stmt in body {
                     self.visit_stmt(stmt);
                 }
-
-                if DUMP_CHUNK {
-                    eprintln!("{}", self.chunk);
-                }
             }
             _ => panic!("func is not a Stmt::FnDeclaration"),
+        }
+
+        if DUMP_CHUNK {
+            eprintln!("{}", self.chunk);
+        }
+    }
+
+    fn enter_scope(&mut self) {
+        self.local_var_counts.push(0);
+    }
+
+    fn increment_var_count(&mut self) {
+        *self.local_var_counts.last_mut().unwrap() += 1;
+    }
+
+    fn exit_scope(&mut self) {
+        let var_count = self.local_var_counts.pop().unwrap();
+        for _i in 0..var_count {
+            dbg!(OpCode::Pop);
+            self.chunk.write_chunk(OpCode::Pop, 0);
         }
     }
 }
@@ -158,12 +180,14 @@ impl<'a> Visitor for Codegen<'a> {
                 initializer,
             } => {
                 self.visit_expr(initializer); // Push value of expression onto top of stack.
+                self.increment_var_count();
             }
             Stmt::FnDeclaration {
                 ident,
                 params,
                 body: _, // Body is codegen in a new `Codegen` instance.
             } => {
+                // NOTE: we don't need to create a new scope here because the VM automatically cleans up the created local variables.
                 let ident = ident.clone();
                 let arity = params.len() as u32;
 
@@ -186,9 +210,11 @@ impl<'a> Visitor for Codegen<'a> {
                 self.chunk.write_chunk(constant, 0);
             }
             Stmt::Block(body) => {
+                self.enter_scope();
                 for stmt in body {
                     self.visit_stmt(stmt);
                 }
+                self.exit_scope();
             }
             Stmt::ExprStmt(expr) => {
                 self.visit_expr(expr);

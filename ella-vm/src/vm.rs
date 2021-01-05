@@ -19,6 +19,8 @@ struct CallFrame {
     /// Instruction pointer.
     ip: usize,
     chunk: Chunk,
+    /// NOTE: not actually a pointer but rather an index to the start of the `CallFrame`.
+    frame_pointer: usize,
 }
 
 pub struct Vm<'a> {
@@ -101,12 +103,14 @@ impl<'a> Vm<'a> {
                     self.stack.push(constant);
                 }
                 Some(OpCode::Ldloc) => {
-                    let local_index = read_byte!();
+                    let local_index =
+                        read_byte!() + self.call_stack.last().unwrap().frame_pointer as u8;
                     let local = self.stack[local_index as usize].clone();
                     self.stack.push(local);
                 }
                 Some(OpCode::Stloc) => {
-                    let local_index = read_byte!();
+                    let local_index =
+                        read_byte!() + self.call_stack.last().unwrap().frame_pointer as u8;
                     let value = self.stack.pop().unwrap();
                     self.stack[local_index as usize] = value;
                 }
@@ -156,7 +160,13 @@ impl<'a> Vm<'a> {
                     if self.call_stack.len() <= 1 {
                         return self.runtime_error("Can only use return in a function.");
                     }
-                    self.call_stack.pop().unwrap(); // remove a `CallFrame` from the call stack.
+                    let return_value = self.stack.pop().unwrap();
+                    let frame = self.call_stack.pop().unwrap(); // remove a `CallFrame` from the call stack.
+                                                                // cleanup local variables created in function
+                    while self.stack.len() > frame.frame_pointer {
+                        self.stack.pop().unwrap();
+                    }
+                    self.stack.push(return_value);
                 }
                 Some(OpCode::LdTrue) => self.stack.push(Value::Bool(true)),
                 Some(OpCode::LdFalse) => self.stack.push(Value::Bool(false)),
@@ -196,6 +206,7 @@ impl<'a> Vm<'a> {
                                 self.call_stack.push(CallFrame {
                                     ip: 0,
                                     chunk: chunk.clone(),
+                                    frame_pointer: self.stack.len(),
                                 });
                             }
                             _ => return self.runtime_error("Value is not a function."),
@@ -228,8 +239,9 @@ impl<'a> Vm<'a> {
     /// Executes the chunk
     pub fn interpret(&mut self, chunk: Chunk) -> InterpretResult {
         self.call_stack.push(CallFrame {
-            ip: 0, // start interpreting at first opcode
-            chunk, // global chunk
+            ip: 0,            // start interpreting at first opcode
+            chunk,            // global chunk
+            frame_pointer: 0, // global frame_pointer points to start of stack
         });
 
         self.run()
@@ -245,9 +257,11 @@ mod tests {
         let cf = CallFrame {
             chunk: Chunk::new("test".to_string()),
             ip: 0,
+            frame_pointer: 0,
         };
 
         assert_eq!(cf.chunk, Chunk::new("test".to_string()));
         assert_eq!(cf.ip, 0);
+        assert_eq!(cf.frame_pointer, 0);
     }
 }

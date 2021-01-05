@@ -2,6 +2,7 @@
 
 use std::collections::HashMap;
 use std::ops::Range;
+use std::u32;
 
 use ella_parser::ast::{Expr, Stmt};
 use ella_parser::visitor::{walk_expr, Visitor};
@@ -22,6 +23,9 @@ pub struct Resolver<'a> {
     variable_offsets: ResolvedSymbolTable,
     resolved_symbols: Vec<ResolvedSymbol>,
     current_scope_depth: u32,
+    /// Every time a new function scope is created, `current_func_offset` should be set to `self.resolved_symbols.len()`.
+    /// When exiting a function scope, the value should be reverted to previous value.
+    current_func_offset: i32,
     source: &'a Source<'a>,
 }
 
@@ -31,6 +35,7 @@ impl<'a> Resolver<'a> {
             variable_offsets: HashMap::new(),
             resolved_symbols: Vec::new(),
             current_scope_depth: 0,
+            current_func_offset: 0,
             source,
         }
     }
@@ -83,9 +88,9 @@ impl<'a> Resolver<'a> {
     /// * `ident` - The identifier to resolve.
     /// * `span` - The span of the expression to resolve. This is used for error reporting in case the variable could not be resolved.
     fn resolve_symbol(&self, ident: &str, span: Range<usize>) -> i32 {
-        for (i, symbol) in self.resolved_symbols.iter().rev().enumerate() {
+        for (i, symbol) in self.resolved_symbols.iter().enumerate().rev() {
             if symbol.ident == ident {
-                return i as i32;
+                return i as i32 - self.current_func_offset;
             }
         }
         self.source.errors.add_error(SyntaxError::new(
@@ -142,11 +147,17 @@ impl<'a> Visitor for Resolver<'a> {
                 body,
             } => {
                 self.add_symbol(ident.clone()); // Add symbol first to allow recursion.
+
+                let old_func_offset = self.current_func_offset;
+                self.current_func_offset = self.resolved_symbols.len() as i32;
+
                 self.enter_scope();
                 for stmt in body {
                     self.visit_stmt(stmt);
                 }
                 self.exit_scope();
+
+                self.current_func_offset = old_func_offset;
             }
             Stmt::Block(body) => {
                 self.enter_scope();
