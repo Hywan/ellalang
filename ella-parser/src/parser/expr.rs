@@ -130,7 +130,9 @@ mod tests {
 
     fn expr(source: &str) -> Expr {
         let source = source.into();
-        Parser::new(&source).parse_expr()
+        let ast = Parser::new(&source).parse_expr();
+        assert!(source.has_no_errors());
+        ast
     }
 
     #[test]

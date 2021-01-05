@@ -1,0 +1,15 @@
+---
+source: ella-parser/src/parser/stmt.rs
+expression: "stmt(\"return 1 + 2;\")"
+---
+ReturnStmt(
+    Binary {
+        lhs: NumberLit(
+            1.0,
+        ),
+        op: Plus,
+        rhs: NumberLit(
+            2.0,
+        ),
+    },
+)

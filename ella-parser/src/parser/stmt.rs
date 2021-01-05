@@ -125,17 +125,37 @@ mod tests {
 
     fn stmt(source: &str) -> Stmt {
         let source = source.into();
-        Parser::new(&source).parse_declaration()
+        let ast = Parser::new(&source).parse_declaration();
+        assert!(source.has_no_errors());
+        ast
     }
 
     #[test]
     fn test_block_stmt() {
-        // TODO
+        assert_debug_snapshot!("block-stmt", stmt("{ 1; }"));
+        assert_debug_snapshot!("block-stmt-multiple", stmt("{ 1; 2; }"));
+        assert_debug_snapshot!("block-stmt-nested", stmt("{ 1; 2; { 3; } }"));
     }
 
     #[test]
     fn test_let_declaration() {
         assert_debug_snapshot!("let-declaration", stmt("let x = 2;"));
         assert_debug_snapshot!("let-declaration-with-expr", stmt("let x = 1 + 2;"));
+    }
+
+    #[test]
+    fn test_fn_declaration() {
+        assert_debug_snapshot!("fn-declaration", stmt("fn foo() {}"));
+        assert_debug_snapshot!("fn-declaration-with-params", stmt("fn foo(a, b, c) {}"));
+        assert_debug_snapshot!(
+            "fn-declaration-with-params-and-body",
+            stmt("fn foo(a, b, c) { a + b + c; }")
+        );
+    }
+
+    #[test]
+    fn test_return_stmt() {
+        assert_debug_snapshot!("return-stmt", stmt("return 1;"));
+        assert_debug_snapshot!("return-stmt-with-expr", stmt("return 1 + 2;"));
     }
 }

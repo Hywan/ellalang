@@ -1,0 +1,13 @@
+---
+source: ella-parser/src/parser/stmt.rs
+expression: "stmt(\"{ 1; }\")"
+---
+Block(
+    [
+        ExprStmt(
+            NumberLit(
+                1.0,
+            ),
+        ),
+    ],
+)

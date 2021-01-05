@@ -1,8 +1,0 @@
----
-source: ella-parser/src/parser.rs
-expression: "expr(\"foo()\")"
----
-FnCall {
-    ident: "foo",
-    args: [],
-}

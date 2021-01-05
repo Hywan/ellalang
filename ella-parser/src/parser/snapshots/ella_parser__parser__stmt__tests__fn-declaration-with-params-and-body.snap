@@ -1,0 +1,31 @@
+---
+source: ella-parser/src/parser/stmt.rs
+expression: "stmt(\"fn foo(a, b, c) { a + b + c; }\")"
+---
+FnDeclaration {
+    ident: "foo",
+    params: [
+        "a",
+        "b",
+        "c",
+    ],
+    body: [
+        ExprStmt(
+            Binary {
+                lhs: Binary {
+                    lhs: Identifier(
+                        "a",
+                    ),
+                    op: Plus,
+                    rhs: Identifier(
+                        "b",
+                    ),
+                },
+                op: Plus,
+                rhs: Identifier(
+                    "c",
+                ),
+            },
+        ),
+    ],
+}

@@ -1,0 +1,9 @@
+---
+source: ella-parser/src/parser/stmt.rs
+expression: "stmt(\"fn foo() {}\")"
+---
+FnDeclaration {
+    ident: "foo",
+    params: [],
+    body: [],
+}
