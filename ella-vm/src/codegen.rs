@@ -148,7 +148,10 @@ impl Visitor for Codegen {
                 self.visit_expr(expr);
                 self.chunk.write_chunk(OpCode::Pop, 0);
             },
-            Stmt::ReturnStmt(_) => todo!(),
+            Stmt::ReturnStmt(expr) => {
+                self.visit_expr(expr);
+                self.chunk.write_chunk(OpCode::Ret, 0);
+            },
             Stmt::Error => {}
         }
     }

@@ -50,9 +50,7 @@ impl<'a> Vm<'a> {
     }
 
     fn read_constant(&mut self) -> Value {
-        let constant = self.chunk().constants
-            [self.code()[self.ip()] as usize]
-            .clone();
+        let constant = self.chunk().constants[self.code()[self.ip()] as usize].clone();
         *self.ip_mut() += 1;
         constant
     }
@@ -138,8 +136,10 @@ impl<'a> Vm<'a> {
                 Some(OpCode::Mul) => gen_num_binary_op!(self, *),
                 Some(OpCode::Div) => gen_num_binary_op!(self, /),
                 Some(OpCode::Ret) => {
-                    println!("< {}", self.stack.pop().unwrap()); // return value
-                    return InterpretResult::Ok;
+                    if self.call_stack.len() <= 1 {
+                        return self.runtime_error("Can only use return in a function.");
+                    }
+                    self.call_stack.pop().unwrap(); // remove a `CallFrame` from the call stack.
                 }
                 Some(OpCode::LdTrue) => self.stack.push(Value::Bool(true)),
                 Some(OpCode::LdFalse) => self.stack.push(Value::Bool(false)),
