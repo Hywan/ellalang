@@ -117,3 +117,25 @@ impl<'a> Parser<'a> {
         Stmt::ReturnStmt(expr)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use insta::assert_debug_snapshot;
+
+    fn stmt(source: &str) -> Stmt {
+        let source = source.into();
+        Parser::new(&source).parse_declaration()
+    }
+
+    #[test]
+    fn test_block_stmt() {
+        // TODO
+    }
+
+    #[test]
+    fn test_let_declaration() {
+        assert_debug_snapshot!("let-declaration", stmt("let x = 2;"));
+        assert_debug_snapshot!("let-declaration-with-expr", stmt("let x = 1 + 2;"));
+    }
+}

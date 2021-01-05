@@ -215,3 +215,19 @@ impl<'a> Vm<'a> {
         vm.run()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn new_call_frame() {
+        let cf = CallFrame {
+            chunk: Chunk::new(),
+            ip: 0,
+        };
+
+        assert_eq!(cf.chunk, Chunk::new());
+        assert_eq!(cf.ip, 0);
+    }
+}
