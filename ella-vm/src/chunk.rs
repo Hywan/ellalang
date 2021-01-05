@@ -41,7 +41,8 @@ pub enum OpCode {
     Pop = 13,
     /// Calls the function on the top of the stack.
     /// To load the function, use `ldc` to load a function object.
-    /// *1 byte*
+    /// Arity is the operand.
+    /// *2 bytes (1 operand)*
     Calli = 14,
 }
 

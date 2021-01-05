@@ -3,7 +3,7 @@ pub mod object;
 use std::fmt;
 use std::rc::Rc;
 
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[derive(Clone, PartialEq, PartialOrd)]
 pub enum Value {
     Number(f64),
     Bool(bool),
@@ -46,6 +46,12 @@ impl fmt::Display for Value {
             Value::Bool(val) => write!(f, "{}", val),
             Value::Object(val) => Self::print_obj(f, val),
         }
+    }
+}
+
+impl fmt::Debug for Value {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(self, f)
     }
 }
 

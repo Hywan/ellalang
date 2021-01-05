@@ -65,7 +65,7 @@ impl<'a> Resolver<'a> {
         self.resolved_symbols = self
             .resolved_symbols
             .iter()
-            .filter(|symbol| symbol.scope_depth > self.current_scope_depth)
+            .filter(|symbol| symbol.scope_depth <= self.current_scope_depth)
             .cloned()
             .collect();
     }

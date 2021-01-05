@@ -93,7 +93,21 @@ impl<'a> Visitor for Codegen<'a> {
                 self.chunk.write_chunk(OpCode::Ldloc, 0);
                 self.chunk.write_chunk(offset as u8, 0);
             }
-            Expr::FnCall { ident: _, args: _ } => todo!(),
+            Expr::FnCall { ident: _, args } => {
+                for arg in args.iter_mut() {
+                    self.visit_expr(arg);
+                }
+
+                let arity = args.len() as u8;
+                let offset = *self
+                    .resolved_symbol_table
+                    .get(&(expr as *const Expr))
+                    .unwrap();
+                self.chunk.write_chunk(OpCode::Ldloc, 0);
+                self.chunk.write_chunk(offset as u8, 0);
+                self.chunk.write_chunk(OpCode::Calli, 0);
+                self.chunk.write_chunk(arity, 0);
+            }
             Expr::Binary { lhs, op, rhs: _ } => match op {
                 Token::Plus => self.chunk.write_chunk(OpCode::Add, 0),
                 Token::Minus => self.chunk.write_chunk(OpCode::Sub, 0),

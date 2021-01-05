@@ -206,7 +206,12 @@ impl<'a> Vm<'a> {
                 None => panic!("Invalid instruction"),
             }
 
-            eprintln!("IP: {}, VM stack: {:?}", self.ip(), self.stack);
+            eprintln!(
+                "IP: {ip}, Chunk: {chunk}, VM stack: {stack:?}",
+                ip = self.ip(),
+                chunk = self.chunk().name,
+                stack = self.stack
+            );
         }
 
         InterpretResult::Ok
