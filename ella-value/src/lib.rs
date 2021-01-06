@@ -1,9 +1,43 @@
 pub mod chunk;
-pub mod object;
 pub mod disassemble;
+pub mod object;
 
 use std::fmt;
 use std::rc::Rc;
+
+use object::{NativeFn, Obj, ObjKind};
+
+/// Symbols that are available globally.
+#[derive(Default)]
+pub struct BuiltinVars {
+    pub values: Vec<(String, Value)>,
+}
+
+impl BuiltinVars {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn add_value(&mut self, ident: String, value: Value) {
+        self.values.push((ident, value));
+    }
+
+    pub fn add_native_fn(
+        &mut self,
+        ident: impl ToString,
+        func: &'static dyn Fn(&mut [Value]) -> Value,
+        arity: u32,
+    ) {
+        let obj = Value::Object(Rc::new(Obj {
+            kind: ObjKind::NativeFn(NativeFn {
+                arity,
+                func,
+                ident: ident.to_string(),
+            }),
+        }));
+        self.add_value(ident.to_string(), obj);
+    }
+}
 
 #[derive(Clone, PartialEq, PartialOrd)]
 pub enum Value {
@@ -33,7 +67,6 @@ impl Value {
     }
 
     fn print_obj(f: &mut fmt::Formatter<'_>, obj: &object::Obj) -> fmt::Result {
-        use object::ObjKind;
         match &obj.kind {
             ObjKind::Str(str) => write!(f, "{}", str),
             ObjKind::Fn { ident, .. } => write!(f, "<fn {}>", ident),

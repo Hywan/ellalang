@@ -230,9 +230,10 @@ impl<'a> Vm<'a> {
                                 }
 
                                 let stack_len = self.stack.len();
-                                let result = func(
-                                    &mut self.stack[stack_len - 1 - arity as usize..stack_len - 1],
-                                );
+                                let args = &mut self.stack[stack_len - arity as usize..stack_len];
+                                debug_assert_eq!(args.len(), arity as usize);
+
+                                let result = func(args);
                                 // remove arguments from stack
                                 for _i in 0..arity {
                                     self.stack.pop().unwrap();

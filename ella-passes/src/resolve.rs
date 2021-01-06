@@ -7,6 +7,7 @@ use std::u32;
 use ella_parser::ast::{Expr, Stmt};
 use ella_parser::visitor::{walk_expr, Visitor};
 use ella_source::{Source, SyntaxError};
+use ella_value::BuiltinVars;
 
 /// Represents a resolved symbol.
 #[derive(Debug, Clone, PartialEq)]
@@ -108,6 +109,12 @@ impl<'a> Resolver<'a> {
                 }
             }
             _ => panic!("func is not a Stmt::FnDeclaration"),
+        }
+    }
+
+    pub fn resolve_builtin_vars(&mut self, builtin_vars: &BuiltinVars) {
+        for (ident, _value) in &builtin_vars.values {
+            self.add_symbol(ident.clone());
         }
     }
 }

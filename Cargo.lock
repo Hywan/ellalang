@@ -234,6 +234,7 @@ dependencies = [
  "ella-parser",
  "ella-passes",
  "ella-source",
+ "ella-value",
  "ella-vm",
  "logos",
 ]
@@ -254,6 +255,7 @@ version = "0.1.0"
 dependencies = [
  "ella-parser",
  "ella-source",
+ "ella-value",
 ]
 
 [[package]]

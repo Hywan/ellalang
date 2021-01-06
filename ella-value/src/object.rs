@@ -1,6 +1,5 @@
 use crate::chunk::Chunk;
 use std::cmp::Ordering;
-use std::rc::Rc;
 
 use super::Value;
 
@@ -8,7 +7,7 @@ use super::Value;
 pub struct NativeFn {
     pub ident: String,
     pub arity: u32,
-    pub func: Rc<dyn Fn(&mut [Value]) -> Value>,
+    pub func: &'static dyn Fn(&mut [Value]) -> Value,
 }
 
 #[derive(Clone)]

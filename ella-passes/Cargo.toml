@@ -9,3 +9,4 @@ version = "0.1.0"
 [dependencies]
 ella-parser = {path = "../ella-parser"}
 ella-source = {path = "../ella-source"}
+ella-value = {path = "../ella-value"}

@@ -8,7 +8,7 @@ use ella_parser::{
 use ella_passes::resolve::ResolvedSymbolTable;
 use ella_value::chunk::{Chunk, OpCode};
 use ella_value::object::{Obj, ObjKind};
-use ella_value::Value;
+use ella_value::{BuiltinVars, Value};
 use std::{collections::HashMap, rc::Rc};
 
 const DUMP_CHUNK: bool = true;
@@ -56,6 +56,14 @@ impl<'a> Codegen<'a> {
 
         if DUMP_CHUNK {
             eprintln!("{}", self.chunk);
+        }
+    }
+
+    pub fn codegen_builtin_vars(&mut self, builtin_vars: &BuiltinVars) {
+        for (_ident, value) in &builtin_vars.values {
+            let constant = self.chunk.add_constant(value.clone());
+            self.chunk.write_chunk(OpCode::Ldc, 0);
+            self.chunk.write_chunk(constant, 0);
         }
     }
 

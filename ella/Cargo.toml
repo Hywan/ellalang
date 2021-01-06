@@ -10,5 +10,6 @@ version = "0.1.0"
 ella-parser = {path = "../ella-parser"}
 ella-passes = {path = "../ella-passes"}
 ella-source = {path = "../ella-source"}
+ella-value = {path = "../ella-value"}
 ella-vm = {path = "../ella-vm"}
 logos = "0.11.4"
