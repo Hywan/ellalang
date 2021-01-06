@@ -3,6 +3,7 @@ use ella_passes::resolve::Resolver;
 use ella_value::BuiltinVars;
 use ella_vm::vm::InterpretResult;
 use ella_vm::{codegen::Codegen, vm::Vm};
+use std::collections::HashMap;
 use std::io::{self, Write};
 
 mod builtin_functions;
@@ -11,13 +12,13 @@ fn main() {
     let mut stdout = io::stdout();
     let stdin = io::stdin();
 
-    let mut vm = Vm::new();
     let builtin_vars = {
         let mut builtin_vars = BuiltinVars::new();
         builtin_vars.add_native_fn("print", &builtin_functions::print, 1);
         builtin_vars.add_native_fn("println", &builtin_functions::println, 1);
         builtin_vars.add_native_fn("assert_eq", &builtin_functions::assert_eq, 2);
         builtin_vars.add_native_fn("assert", &builtin_functions::assert, 1);
+        builtin_vars.add_native_fn("clock", &builtin_functions::clock, 0);
         builtin_vars
     };
 
@@ -27,6 +28,12 @@ fn main() {
         resolver.resolve_builtin_vars(&builtin_vars);
         resolver.into_resolved_symbols()
     };
+
+    let mut vm = Vm::new(&builtin_vars);
+    let mut resolved_symbol_table = &HashMap::new();
+    let mut codegen = Codegen::new("<global>".to_string(), &resolved_symbol_table);
+    codegen.codegen_builtin_vars(&builtin_vars);
+    vm.interpret(codegen.into_inner_chunk()); // load built in functions into memory
 
     loop {
         print!("> ");
@@ -42,13 +49,12 @@ fn main() {
 
         let mut resolver = Resolver::new_with_existing_symbols(&source, resolved_symbols.clone());
         resolver.resolve_top_level(&mut ast);
-        let resolved_symbol_table = resolver.resolved_symbol_table();
+        resolved_symbol_table = resolver.resolved_symbol_table();
 
         eprintln!("{}", source.errors);
         if source.has_no_errors() {
             let mut codegen = Codegen::new("<global>".to_string(), resolved_symbol_table);
 
-            codegen.codegen_builtin_vars(&builtin_vars);
             codegen.codegen_function(&mut ast);
 
             let chunk = codegen.into_inner_chunk();

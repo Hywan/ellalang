@@ -1,10 +1,11 @@
 use ella_value::chunk::{Chunk, OpCode};
 use ella_value::object::{NativeFn, Obj, ObjKind};
-use ella_value::{Value, ValueArray};
+use ella_value::{BuiltinVars, Value, ValueArray};
 use num_traits::FromPrimitive;
 
-use std::marker::PhantomData;
 use std::rc::Rc;
+
+const INSPECT_VM_STACK: bool = false;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum InterpretResult {
@@ -24,7 +25,7 @@ pub struct Vm<'a> {
     /// VM stack.
     stack: ValueArray,
     call_stack: Vec<CallFrame>,
-    phantom: PhantomData<&'a ()>,
+    builtin_vars: &'a BuiltinVars,
 }
 
 impl<'a> Vm<'a> {
@@ -248,22 +249,24 @@ impl<'a> Vm<'a> {
                 None => panic!("Invalid instruction"),
             }
 
-            eprintln!(
-                "IP: {ip}, Chunk: {chunk}, VM stack: {stack:?}",
-                ip = self.ip(),
-                chunk = self.chunk().name,
-                stack = self.stack
-            );
+            if INSPECT_VM_STACK {
+                eprintln!(
+                    "IP: {ip}, Chunk: {chunk}, VM stack: {stack:?}",
+                    ip = self.ip(),
+                    chunk = self.chunk().name,
+                    stack = &self.stack[(self.builtin_vars.values.len()).min(self.stack.len())..] // do not show builtin vars in stack
+                );
+            }
         }
 
         InterpretResult::Ok
     }
 
-    pub fn new() -> Self {
+    pub fn new(builtin_vars: &'a BuiltinVars) -> Self {
         Self {
             stack: Vec::with_capacity(256),
             call_stack: Vec::new(),
-            phantom: PhantomData,
+            builtin_vars,
         }
     }
 

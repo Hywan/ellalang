@@ -53,14 +53,18 @@ impl PartialOrd for Obj {
     }
 }
 
+const LOG_OBJECT_DROP: bool = false;
+
 /// `Drop` is implemented for `Obj` merely to ease gc debugging.
 impl Drop for Obj {
     fn drop(&mut self) {
-        match &self.kind {
-            ObjKind::Str(string) => eprintln!("Collecting object {:?}", string),
-            ObjKind::Fn { ident, .. } => eprintln!("Collecting function object {:?}", ident),
-            ObjKind::NativeFn(NativeFn { ident, .. }) => {
-                eprintln!("Collecting native function object {:?}", ident)
+        if LOG_OBJECT_DROP {
+            match &self.kind {
+                ObjKind::Str(string) => eprintln!("Collecting object {:?}", string),
+                ObjKind::Fn { ident, .. } => eprintln!("Collecting function object {:?}", ident),
+                ObjKind::NativeFn(NativeFn { ident, .. }) => {
+                    eprintln!("Collecting native function object {:?}", ident)
+                }
             }
         }
     }
