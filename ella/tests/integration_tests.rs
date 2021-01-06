@@ -57,6 +57,32 @@ fn variables() {
         assert_eq(x, 1);
         let y = x + 1;
         assert_eq(y, 2);
-        assert_eq(y, x + 1);"#,
+        assert_eq(y, x + 1);
+        x = 10;
+        assert_eq(x, 10);"#,
+    );
+}
+
+#[test]
+fn functions() {
+    interpret(
+        r#"
+        fn foo() {
+            return 1;
+        }
+        assert_eq(foo(), 1);"#,
+    );
+}
+
+#[test]
+fn functions_with_params() {
+    interpret(
+        r#"
+        fn double(x) {
+            let result = x * 2;
+            return result;
+        }
+        assert_eq(double(10), 20);
+        assert_eq(double(-2), -4);"#,
     );
 }
