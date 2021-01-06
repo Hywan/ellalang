@@ -91,6 +91,15 @@ mod functions {
     }
 
     #[test]
+    fn functions_implicit_return() {
+        interpret(
+            r#"
+            fn foo() { }
+            assert_eq(foo(), 0);"#,
+        );
+    }
+
+    #[test]
     fn higher_order_function() {
         interpret(
             r#"

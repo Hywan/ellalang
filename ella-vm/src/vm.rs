@@ -13,6 +13,7 @@ pub enum InterpretResult {
     RuntimeError { message: String, line: usize },
 }
 
+#[derive(Debug)]
 struct CallFrame {
     /// Instruction pointer.
     ip: usize,
@@ -100,7 +101,35 @@ impl<'a> Vm<'a> {
             }
         }
 
-        while self.ip() < self.code().len() {
+        /// Uses the last value on the stack as the return value and cleans up the local variables created inside the function.
+        macro_rules! cleanup_function {
+            () => {{
+                let return_value = self.stack.pop().unwrap();
+                let frame = self.call_stack.pop().unwrap(); // remove a `CallFrame` from the call stack.
+                                                            // cleanup local variables created in function
+                while self.stack.len() > frame.frame_pointer {
+                    self.stack.pop().unwrap();
+                }
+                self.stack.push(return_value);
+            }}
+        }
+
+        /// If inside a function, cleans up and returns `true`. Else returns `false` and does nothing.
+        macro_rules! try_implicit_ret {
+            () => {{
+                if self.call_stack.len() > 1 {
+                    // inside a function
+                    self.stack.push(Value::Number(0.0)); // FIXME: returns 0.0 by default
+                    cleanup_function!();
+                    true
+                } else {
+                    self.call_stack.pop().unwrap();
+                    false
+                }
+            }};
+        }
+
+        while self.ip() < self.code().len() || try_implicit_ret!() {
             match OpCode::from_u8(read_byte!()) {
                 Some(OpCode::Ldc) => {
                     let constant = read_constant!();
@@ -172,13 +201,7 @@ impl<'a> Vm<'a> {
                     if self.call_stack.len() <= 1 {
                         return self.runtime_error("Can only use return in a function.");
                     }
-                    let return_value = self.stack.pop().unwrap();
-                    let frame = self.call_stack.pop().unwrap(); // remove a `CallFrame` from the call stack.
-                                                                // cleanup local variables created in function
-                    while self.stack.len() > frame.frame_pointer {
-                        self.stack.pop().unwrap();
-                    }
-                    self.stack.push(return_value);
+                    cleanup_function!();
                 }
                 Some(OpCode::LdTrue) => self.stack.push(Value::Bool(true)),
                 Some(OpCode::LdFalse) => self.stack.push(Value::Bool(false)),
