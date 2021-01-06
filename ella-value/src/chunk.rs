@@ -14,12 +14,6 @@ pub enum OpCode {
     /// Stores the top value on the stack into a local variable.
     /// *2 bytes (1 operand)*
     StLoc = 16,
-    /// Load an argument onto the stack.
-    /// *2 bytes (1 operand)*
-    LdArg = 17,
-    /// Store the top value on the stack into an argument variable.
-    /// *2 bytes (1 operand)*
-    StArg = 18,
     /// Negate the last value on the stack.
     /// *1 byte*
     Neg = 1,

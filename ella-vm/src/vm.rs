@@ -145,16 +145,6 @@ impl<'a> Vm<'a> {
                     let value = self.stack.pop().unwrap();
                     self.stack[local_index as usize] = value;
                 }
-                Some(OpCode::LdArg) => {
-                    let local_index = read_byte!() + frame!().frame_pointer as u8;
-                    let local = self.stack[local_index as usize].clone();
-                    self.stack.push(local);
-                }
-                Some(OpCode::StArg) => {
-                    let local_index = read_byte!() + frame!().frame_pointer as u8;
-                    let value = self.stack.pop().unwrap();
-                    self.stack[local_index as usize] = value;
-                }
                 Some(OpCode::Neg) => {
                     let val = self.stack.pop().unwrap();
                     match val {

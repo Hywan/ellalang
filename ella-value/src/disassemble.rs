@@ -73,8 +73,6 @@ impl Chunk {
             Some(OpCode::Ldc) => self.constant_instr(f, "ldc", offset),
             Some(OpCode::LdLoc) => self.local_instr(f, "ldloc", offset),
             Some(OpCode::StLoc) => self.local_instr(f, "stloc", offset),
-            Some(OpCode::LdArg) => self.local_instr(f, "ldarg", offset),
-            Some(OpCode::StArg) => self.local_instr(f, "starg", offset),
             Some(OpCode::Neg) => self.simple_instr(f, "neg", offset),
             Some(OpCode::Not) => self.simple_instr(f, "not", offset),
             Some(OpCode::Add) => self.simple_instr(f, "add", offset),
