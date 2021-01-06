@@ -63,6 +63,15 @@ fn variables() {
     );
 }
 
+#[test]
+fn comments() {
+    interpret(
+        r#"
+        let x = 1; // a comment
+        assert_eq(x, 1);"#,
+    );
+}
+
 mod functions {
     use super::*;
 

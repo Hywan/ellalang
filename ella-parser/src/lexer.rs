@@ -70,6 +70,7 @@ pub enum Token {
 
     // misc
     #[regex(r"[ \t\n\f]+", logos::skip)]
+    #[regex(r"//[^\n]*", logos::skip)] // single line comments
     #[error]
     Error,
 
