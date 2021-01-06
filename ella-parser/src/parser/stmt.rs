@@ -35,6 +35,9 @@ impl<'a> Parser<'a> {
 
                 if self.eat(Token::CloseBrace) {
                     break;
+                } else if self.current_token == Token::Eof {
+                    self.unexpected();
+                    break;
                 }
             }
         }
