@@ -45,6 +45,31 @@ impl<'a> Parser<'a> {
             params: Vec::new(),
         }
     }
+
+    /// Returns an anonymous top level function.
+    /// If the last statement is an [`Stmt::ExprStmt`], it will create a function call to `println()`.
+    pub fn parse_repl_input(&mut self) -> Stmt {
+        let mut body = Vec::new();
+        loop {
+            body.push(self.parse_declaration());
+            if matches!(self.current_token, Token::Eof | Token::Error) {
+                break;
+            }
+        }
+
+        if let Some(Stmt::ExprStmt(expr)) = body.last_mut() {
+            *expr = Expr::FnCall {
+                args: vec![expr.clone()],
+                ident: "println".to_string(),
+            }
+        }
+
+        Stmt::FnDeclaration {
+            body,
+            ident: "<global>".to_string(),
+            params: Vec::new(),
+        }
+    }
 }
 
 /// Parse utilities

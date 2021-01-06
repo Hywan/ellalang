@@ -44,7 +44,7 @@ fn main() {
 
         let source = input.as_str().into();
         let mut parser = Parser::new(&source);
-        let mut ast = parser.parse_program();
+        let mut ast = parser.parse_repl_input();
         // eprintln!("{:#?}", ast);
 
         let mut resolver = Resolver::new_with_existing_symbols(&source, resolved_symbols.clone());
