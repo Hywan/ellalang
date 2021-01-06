@@ -14,7 +14,10 @@ fn main() {
     let mut vm = Vm::new();
     let builtin_vars = {
         let mut builtin_vars = BuiltinVars::new();
+        builtin_vars.add_native_fn("print", &builtin_functions::print, 1);
+        builtin_vars.add_native_fn("println", &builtin_functions::println, 1);
         builtin_vars.add_native_fn("assert_eq", &builtin_functions::assert_eq, 2);
+        builtin_vars.add_native_fn("assert", &builtin_functions::assert, 1);
         builtin_vars
     };
 
