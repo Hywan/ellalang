@@ -1,18 +1,14 @@
 //! Lowers AST into a `Chunk` (bytecode).
 
-use crate::{
-    chunk::{Chunk, OpCode},
-    value::{
-        object::{Obj, ObjKind},
-        Value,
-    },
-};
 use ella_parser::{
     ast::{Expr, Stmt},
     lexer::Token,
     visitor::{walk_expr, Visitor},
 };
 use ella_passes::resolve::ResolvedSymbolTable;
+use ella_value::chunk::{Chunk, OpCode};
+use ella_value::object::{Obj, ObjKind};
+use ella_value::Value;
 use std::{collections::HashMap, rc::Rc};
 
 const DUMP_CHUNK: bool = true;

@@ -1,4 +1,4 @@
-use crate::value::{Value, ValueArray};
+use crate::{Value, ValueArray};
 use enum_primitive_derive::Primitive;
 
 /// Represents an opcode. Should only takes up a byte (`u8`).
@@ -52,13 +52,13 @@ pub enum OpCode {
     Calli = 14,
 }
 
-#[derive(Debug, Clone, PartialEq)] // FIXME: remove `PartialEq`.
+#[derive(Debug, Clone)]
 pub struct Chunk {
-    pub(crate) code: Vec<u8>, // a byte array
+    pub code: Vec<u8>, // a byte array
     /// Source code positions for each byte in `code`.
-    pub(crate) lines: Vec<usize>,
-    pub(crate) constants: ValueArray,
-    pub(crate) name: String,
+    pub lines: Vec<usize>,
+    pub constants: ValueArray,
+    pub name: String,
 }
 
 /// `u8` and `OpCode` should implement this trait.

@@ -1,7 +1,17 @@
 use crate::chunk::Chunk;
 use std::cmp::Ordering;
+use std::rc::Rc;
 
-#[derive(Debug, Clone, PartialEq)]
+use super::Value;
+
+#[derive(Clone)]
+pub struct NativeFn {
+    pub ident: String,
+    pub arity: u32,
+    pub func: Rc<dyn Fn(&mut [Value]) -> Value>,
+}
+
+#[derive(Clone)]
 pub enum ObjKind {
     Str(String),
     Fn {
@@ -10,11 +20,24 @@ pub enum ObjKind {
         arity: u32,
         chunk: Chunk,
     },
+    NativeFn(NativeFn),
 }
 
-#[derive(Debug, Clone, PartialEq)]
+impl PartialEq for ObjKind {
+    fn eq(&self, other: &ObjKind) -> bool {
+        match self {
+            Self::Str(l) => match other {
+                Self::Str(r) => l == r,
+                _ => false,
+            },
+            _ => false,
+        }
+    }
+}
+
+#[derive(Clone, PartialEq)]
 pub struct Obj {
-    pub(crate) kind: ObjKind,
+    pub kind: ObjKind,
 }
 
 impl Obj {
@@ -37,6 +60,9 @@ impl Drop for Obj {
         match &self.kind {
             ObjKind::Str(string) => eprintln!("Collecting object {:?}", string),
             ObjKind::Fn { ident, .. } => eprintln!("Collecting function object {:?}", ident),
+            ObjKind::NativeFn(NativeFn { ident, .. }) => {
+                eprintln!("Collecting native function object {:?}", ident)
+            }
         }
     }
 }

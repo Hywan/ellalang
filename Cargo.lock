@@ -261,13 +261,21 @@ name = "ella-source"
 version = "0.1.0"
 
 [[package]]
+name = "ella-value"
+version = "0.1.0"
+dependencies = [
+ "enum-primitive-derive",
+ "num-traits",
+]
+
+[[package]]
 name = "ella-vm"
 version = "0.1.0"
 dependencies = [
  "criterion",
  "ella-parser",
  "ella-passes",
- "enum-primitive-derive",
+ "ella-value",
  "num-traits",
 ]
 

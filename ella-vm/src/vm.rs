@@ -1,11 +1,8 @@
-use crate::{
-    chunk::{Chunk, OpCode},
-    value::{
-        object::{Obj, ObjKind},
-        Value, ValueArray,
-    },
-};
+use ella_value::chunk::{Chunk, OpCode};
+use ella_value::object::{NativeFn, Obj, ObjKind};
+use ella_value::{Value, ValueArray};
 use num_traits::FromPrimitive;
+
 use std::marker::PhantomData;
 use std::rc::Rc;
 
@@ -81,16 +78,16 @@ impl<'a> Vm<'a> {
         /// Generate vm for binary operator.
         macro_rules! gen_num_binary_op {
             ($op: tt, $result: path) => {{
-                let b: $crate::value::Value = self.stack.pop().unwrap();
-                let a: $crate::value::Value = self.stack.pop().unwrap();
+                let b: Value = self.stack.pop().unwrap();
+                let a: Value = self.stack.pop().unwrap();
 
                 let a = match a {
-                    $crate::value::Value::Number(val) => val,
+                    Value::Number(val) => val,
                     _ => return self.runtime_error("Operands must be numbers."),
                 };
 
                 let b = match b {
-                    $crate::value::Value::Number(val) => val,
+                    Value::Number(val) => val,
                     _ => return self.runtime_error("Operands must be numbers."),
                 };
 
@@ -98,7 +95,7 @@ impl<'a> Vm<'a> {
             }};
 
             ($op: tt) => {
-                gen_num_binary_op!($op, $crate::value::Value::Number)
+                gen_num_binary_op!($op, Value::Number)
             }
         }
 
@@ -202,7 +199,6 @@ impl<'a> Vm<'a> {
                                 arity,
                                 ref chunk,
                             } => {
-                                // execute the function
                                 let calli_arity = read_byte!();
 
                                 if arity != calli_arity as u32 {
@@ -218,6 +214,30 @@ impl<'a> Vm<'a> {
                                     chunk: chunk.clone(),
                                     frame_pointer: self.stack.len() - arity as usize,
                                 });
+                            }
+                            ObjKind::NativeFn(NativeFn {
+                                ident: _,
+                                arity,
+                                ref func,
+                            }) => {
+                                let calli_arity = read_byte!();
+
+                                if arity != calli_arity as u32 {
+                                    return self.runtime_error(format!(
+                                        "Expected {} argument(s), received {}.",
+                                        arity, calli_arity
+                                    ));
+                                }
+
+                                let stack_len = self.stack.len();
+                                let result = func(
+                                    &mut self.stack[stack_len - 1 - arity as usize..stack_len - 1],
+                                );
+                                // remove arguments from stack
+                                for _i in 0..arity {
+                                    self.stack.pop().unwrap();
+                                }
+                                self.stack.push(result);
                             }
                             _ => return self.runtime_error("Value is not a function."),
                         },
@@ -278,7 +298,6 @@ mod tests {
             frame_pointer: 0,
         };
 
-        assert_eq!(cf.chunk, Chunk::new("test".to_string()));
         assert_eq!(cf.ip, 0);
         assert_eq!(cf.frame_pointer, 0);
     }
