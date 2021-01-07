@@ -122,6 +122,7 @@ impl Chunk {
             Some(OpCode::StLoc) => self.ld_or_st_instr(f, "stloc", offset),
             Some(OpCode::LdUpVal) => self.ld_or_st_instr(f, "ldupval", offset),
             Some(OpCode::StUpVal) => self.ld_or_st_instr(f, "stupval", offset),
+            Some(OpCode::CloseUpVal) => self.simple_instr(f, "closeupval", offset),
             Some(OpCode::Neg) => self.simple_instr(f, "neg", offset),
             Some(OpCode::Not) => self.simple_instr(f, "not", offset),
             Some(OpCode::Add) => self.simple_instr(f, "add", offset),

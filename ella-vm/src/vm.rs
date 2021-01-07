@@ -3,6 +3,7 @@ use ella_value::object::{Closure, Function, NativeFn, Obj, ObjKind, UpValue};
 use ella_value::{BuiltinVars, Value, ValueArray};
 use num_traits::FromPrimitive;
 
+use std::cell::RefCell;
 use std::rc::Rc;
 
 const INSPECT_VM_STACK: bool = false;
@@ -27,6 +28,7 @@ pub struct Vm<'a> {
     stack: ValueArray,
     call_stack: Vec<CallFrame>,
     builtin_vars: &'a BuiltinVars,
+    upvalues: Vec<Rc<RefCell<UpValue>>>,
 }
 
 impl<'a> Vm<'a> {
@@ -53,11 +55,29 @@ impl<'a> Vm<'a> {
         }
     }
 
-    fn set_upvalue(&mut self, upvalue: &mut UpValue, new_value: Value) {
-        match upvalue {
-            UpValue::Open(index) => self.stack[*index] = new_value,
-            UpValue::Closed(value) => *value = new_value,
+    fn set_upvalue(&mut self, upvalue: Rc<RefCell<UpValue>>, new_value: Value) {
+        match *upvalue.borrow_mut() {
+            UpValue::Open(index) => self.stack[index] = new_value,
+            UpValue::Closed(ref _value) => *upvalue.borrow_mut() = UpValue::Closed(new_value),
         }
+    }
+
+    fn close_upvalues(&mut self, index: usize) {
+        let value = self.stack[index].clone();
+        for upvalue in &self.upvalues {
+            if upvalue.borrow().is_open_with_index(index) {
+                *upvalue.borrow_mut() = UpValue::Closed(value.clone());
+            }
+        }
+    }
+
+    fn find_open_upvalue_with_index(&self, index: usize) -> Option<Rc<RefCell<UpValue>>> {
+        for upvalue in &self.upvalues {
+            if upvalue.borrow().is_open_with_index(index) {
+                return Some(upvalue.clone());
+            }
+        }
+        None
     }
 
     fn runtime_error(&self, message: impl ToString) -> InterpretResult {
@@ -159,13 +179,24 @@ impl<'a> Vm<'a> {
                     let value = self.stack.pop().unwrap();
                     self.stack[local_index as usize] = value;
                 }
-                Some(OpCode::LdUpVal) => todo!(),
+                Some(OpCode::LdUpVal) => {
+                    let index = read_byte!();
+                    let upvalue =
+                        self.call_stack.last().unwrap().closure.upvalues[index as usize].clone();
+                    let value = self.resolve_upvalue_into_value(&upvalue.borrow());
+                    self.stack.push(value);
+                }
                 Some(OpCode::StUpVal) => {
                     let index = read_byte!();
                     let value = self.stack.pop().unwrap();
-                    // let upvalue = self.call_stack.last().unwrap();
-                    // self.set_upvalue(upvalue, new_value)
-                    todo!();
+                    let upvalue =
+                        self.call_stack.last().unwrap().closure.upvalues[index as usize].clone();
+                    self.set_upvalue(upvalue, value);
+                }
+                Some(OpCode::CloseUpVal) => {
+                    let index = self.stack.len() - 1;
+                    self.close_upvalues(index);
+                    self.stack.pop().unwrap();
                 }
                 Some(OpCode::Neg) => {
                     let val = self.stack.pop().unwrap();
@@ -314,10 +345,21 @@ impl<'a> Vm<'a> {
                     };
 
                     for _i in 0..upvalues_count {
-                        let is_local = read_byte!();
-                        let index = read_byte!();
-                        todo!();
+                        let _is_local = read_byte!();
+                        let index = read_byte!() + frame!().frame_pointer as u8;
+
+                        let upvalue = match self.find_open_upvalue_with_index(index as usize) {
+                            Some(upvalue) => upvalue,
+                            None => {
+                                let upvalue = Rc::new(RefCell::new(UpValue::Open(index as usize)));
+                                self.upvalues.push(upvalue.clone());
+                                upvalue
+                            }
+                        };
+
+                        closure.upvalues.push(upvalue);
                     }
+                    debug_assert_eq!(closure.upvalues.len(), upvalues_count);
 
                     self.stack.push(Value::Object(Rc::new(Obj {
                         kind: ObjKind::Closure(closure),
@@ -341,9 +383,10 @@ impl<'a> Vm<'a> {
 
     pub fn new(builtin_vars: &'a BuiltinVars) -> Self {
         Self {
-            stack: Vec::with_capacity(256),
+            stack: Vec::new(),
             call_stack: Vec::new(),
             builtin_vars,
+            upvalues: Vec::new(),
         }
     }
 

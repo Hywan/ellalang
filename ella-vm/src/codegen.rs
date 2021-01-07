@@ -207,8 +207,6 @@ impl<'a> Visitor for Codegen<'a> {
                     }),
                 });
                 let constant = self.chunk.add_constant(Value::Object(func));
-                // self.chunk.write_chunk(OpCode::Ldc, 0);
-                // self.chunk.write_chunk(constant, 0);
                 self.chunk.write_chunk(OpCode::Closure, 0);
                 self.chunk.write_chunk(constant, 0);
             }

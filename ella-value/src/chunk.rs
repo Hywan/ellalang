@@ -20,6 +20,9 @@ pub enum OpCode {
     /// Stores the top value on the stack into an upvalue.
     /// *2 bytes (1 operand)*
     StUpVal = 18,
+    /// Closes an upvalue.
+    /// *1 byte*
+    CloseUpVal = 20,
     /// Negate the last value on the stack.
     /// *1 byte*
     Neg = 1,

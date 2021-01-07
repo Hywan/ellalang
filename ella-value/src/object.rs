@@ -1,4 +1,5 @@
 use crate::chunk::Chunk;
+use std::cell::RefCell;
 use std::cmp::Ordering;
 use std::rc::Rc;
 
@@ -22,13 +23,35 @@ pub struct Function {
 #[derive(Clone)]
 pub struct Closure {
     pub func: Function,
-    pub upvalues: Vec<Rc<UpValue>>,
+    pub upvalues: Vec<Rc<RefCell<UpValue>>>,
 }
 
 #[derive(Clone)]
 pub enum UpValue {
     Open(usize),
     Closed(Value),
+}
+
+impl UpValue {
+    /// Returns `true` if the `UpValue` is in an open state ([`UpValue::Open`]).
+    /// # Example
+    /// ```
+    /// use ella_value::object::UpValue;
+    /// use ella_value::Value;
+    /// 
+    /// let upvalue = UpValue::Open(10);
+    /// assert!(upvalue.is_open());
+    /// let upvalue = UpValue::Closed(Value::Bool(false));
+    /// assert!(!upvalue.is_open());
+    /// ```
+    pub fn is_open(&self) -> bool {
+        matches!(self, UpValue::Open(_))
+    }
+
+    /// Returns `true` if the `UpValue` is in an open state ([`UpValue::Open`]) and has the given `index`.
+    pub fn is_open_with_index(&self, index: usize) -> bool {
+        matches!(self, UpValue::Open(x) if *x == index)
+    }
 }
 
 #[derive(Clone)]
