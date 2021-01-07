@@ -28,7 +28,7 @@ impl Chunk {
         writeln!(
             f,
             "{:<5} {:<3} (value = {})",
-            constant_index, name, constant
+            name, constant_index, constant
         )?;
         Ok(offset + 2)
     }
@@ -68,7 +68,7 @@ impl Chunk {
         writeln!(
             f,
             "{:<5} {:<3} (value = {})",
-            constant_index, name, constant
+            name, constant_index, constant
         )?;
         offset += 2;
 
