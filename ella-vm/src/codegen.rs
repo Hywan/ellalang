@@ -112,21 +112,21 @@ impl<'a> Visitor for Codegen<'a> {
                 self.chunk.write_chunk(constant, 0);
             }
             Expr::Identifier(_) => {
-                let offset = *self
+                let resolved_symbol = *self
                     .resolved_symbol_table
                     .get(&(expr as *const Expr))
                     .unwrap();
                 self.chunk.write_chunk(OpCode::LdLoc, 0);
-                self.chunk.write_chunk(offset as u8, 0);
+                self.chunk.write_chunk(resolved_symbol.offset as u8, 0);
             }
             Expr::FnCall { ident: _, args } => {
                 let arity = args.len() as u8;
-                let offset = *self
+                let resolved_symbol = *self
                     .resolved_symbol_table
                     .get(&(expr as *const Expr))
                     .unwrap();
                 self.chunk.write_chunk(OpCode::LdLoc, 0);
-                self.chunk.write_chunk(offset as u8, 0);
+                self.chunk.write_chunk(resolved_symbol.offset as u8, 0);
                 self.chunk.write_chunk(OpCode::Calli, 0);
                 self.chunk.write_chunk(arity, 0);
             }
@@ -136,12 +136,12 @@ impl<'a> Visitor for Codegen<'a> {
                 Token::Asterisk => self.chunk.write_chunk(OpCode::Mul, 0),
                 Token::Slash => self.chunk.write_chunk(OpCode::Div, 0),
                 Token::Equals => {
-                    let offset = *self
+                    let resolved_symbol = *self
                         .resolved_symbol_table
                         .get(&(lhs.as_ref() as *const Expr))
                         .unwrap();
                     self.chunk.write_chunk(OpCode::StLoc, 0);
-                    self.chunk.write_chunk(offset as u8, 0);
+                    self.chunk.write_chunk(resolved_symbol.offset as u8, 0);
                 }
                 Token::EqualsEquals => self.chunk.write_chunk(OpCode::Eq, 0),
                 Token::NotEquals => {
