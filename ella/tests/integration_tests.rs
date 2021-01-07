@@ -50,6 +50,24 @@ fn interpret(source: &str) {
 }
 
 #[test]
+#[should_panic]
+fn smoke_assert() {
+    interpret(
+        r#"
+        assert(false);"#,
+    );
+}
+
+#[test]
+#[should_panic]
+fn smoke_assert_eq() {
+    interpret(
+        r#"
+        assert_eq(1, 2);"#,
+    );
+}
+
+#[test]
 fn variables() {
     interpret(
         r#"

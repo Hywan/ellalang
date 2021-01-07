@@ -1,5 +1,6 @@
 use crate::chunk::Chunk;
 use std::cmp::Ordering;
+use std::rc::Rc;
 
 use super::Value;
 
@@ -11,14 +12,30 @@ pub struct NativeFn {
 }
 
 #[derive(Clone)]
+pub struct Function {
+    pub ident: String,
+    pub arity: u32,
+    pub chunk: Chunk,
+    pub upvalues_count: usize,
+}
+
+#[derive(Clone)]
+pub struct Closure {
+    pub func: Function,
+    pub upvalues: Vec<Rc<UpValue>>,
+}
+
+#[derive(Clone)]
+pub enum UpValue {
+    Open(usize),
+    Closed(Value),
+}
+
+#[derive(Clone)]
 pub enum ObjKind {
     Str(String),
-    Fn {
-        ident: String,
-        /// Number of arguments that the function accepts.
-        arity: u32,
-        chunk: Chunk,
-    },
+    Fn(Function),
+    Closure(Closure),
     NativeFn(NativeFn),
 }
 
@@ -61,7 +78,12 @@ impl Drop for Obj {
         if LOG_OBJECT_DROP {
             match &self.kind {
                 ObjKind::Str(string) => eprintln!("Collecting object {:?}", string),
-                ObjKind::Fn { ident, .. } => eprintln!("Collecting function object {:?}", ident),
+                ObjKind::Fn(Function { ident, .. }) => {
+                    eprintln!("Collecting function object {:?}", ident)
+                }
+                ObjKind::Closure(Closure { func, .. }) => {
+                    eprintln!("Collecting closure object {:?}", func.ident)
+                }
                 ObjKind::NativeFn(NativeFn { ident, .. }) => {
                     eprintln!("Collecting native function object {:?}", ident)
                 }

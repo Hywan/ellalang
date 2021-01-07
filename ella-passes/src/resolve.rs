@@ -90,7 +90,7 @@ impl<'a> Resolver<'a> {
     /// * `span` - The span of the expression to resolve. This is used for error reporting in case the variable could not be resolved.
     fn resolve_symbol(&self, ident: &str, span: Range<usize>) -> i32 {
         for (i, symbol) in self.resolved_symbols.iter().enumerate().rev() {
-            if symbol.ident == ident {
+            if symbol.ident == ident && symbol.scope_depth == self.current_scope_depth {
                 return i as i32 - self.current_func_offset;
             }
         }

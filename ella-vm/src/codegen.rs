@@ -7,7 +7,7 @@ use ella_parser::{
 };
 use ella_passes::resolve::ResolvedSymbolTable;
 use ella_value::chunk::{Chunk, OpCode};
-use ella_value::object::{Obj, ObjKind};
+use ella_value::object::{Function, Obj, ObjKind};
 use ella_value::{BuiltinVars, Value};
 use std::{collections::HashMap, rc::Rc};
 
@@ -199,14 +199,17 @@ impl<'a> Visitor for Codegen<'a> {
                 };
 
                 let func = Rc::new(Obj {
-                    kind: ObjKind::Fn {
+                    kind: ObjKind::Fn(Function {
                         ident,
                         arity,
                         chunk: func_chunk,
-                    },
+                        upvalues_count: 0, // TODO
+                    }),
                 });
                 let constant = self.chunk.add_constant(Value::Object(func));
-                self.chunk.write_chunk(OpCode::Ldc, 0);
+                // self.chunk.write_chunk(OpCode::Ldc, 0);
+                // self.chunk.write_chunk(constant, 0);
+                self.chunk.write_chunk(OpCode::Closure, 0);
                 self.chunk.write_chunk(constant, 0);
             }
             Stmt::Block(body) => {

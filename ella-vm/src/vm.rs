@@ -1,5 +1,5 @@
 use ella_value::chunk::{Chunk, OpCode};
-use ella_value::object::{NativeFn, Obj, ObjKind};
+use ella_value::object::{Closure, Function, NativeFn, Obj, ObjKind, UpValue};
 use ella_value::{BuiltinVars, Value, ValueArray};
 use num_traits::FromPrimitive;
 
@@ -13,13 +13,13 @@ pub enum InterpretResult {
     RuntimeError { message: String, line: usize },
 }
 
-#[derive(Debug)]
+#[derive(Clone)]
 struct CallFrame {
     /// Instruction pointer.
     ip: usize,
-    chunk: Chunk,
     /// NOTE: not actually a pointer but rather an index to the start of the `CallFrame`.
     frame_pointer: usize,
+    closure: Rc<Closure>,
 }
 
 pub struct Vm<'a> {
@@ -31,11 +31,11 @@ pub struct Vm<'a> {
 
 impl<'a> Vm<'a> {
     fn chunk(&self) -> &Chunk {
-        &self.call_stack.last().unwrap().chunk
+        &self.call_stack.last().unwrap().closure.func.chunk
     }
 
     fn code(&self) -> &[u8] {
-        &self.call_stack.last().unwrap().chunk.code
+        &self.call_stack.last().unwrap().closure.func.chunk.code
     }
 
     fn ip_mut(&mut self) -> &mut usize {
@@ -44,6 +44,20 @@ impl<'a> Vm<'a> {
 
     fn ip(&self) -> usize {
         self.call_stack.last().unwrap().ip
+    }
+
+    fn resolve_upvalue_into_value(&self, upvalue: &UpValue) -> Value {
+        match upvalue {
+            UpValue::Open(index) => self.stack[*index].clone(),
+            UpValue::Closed(value) => value.clone(),
+        }
+    }
+
+    fn set_upvalue(&mut self, upvalue: &mut UpValue, new_value: Value) {
+        match upvalue {
+            UpValue::Open(index) => self.stack[*index] = new_value,
+            UpValue::Closed(value) => *value = new_value,
+        }
     }
 
     fn runtime_error(&self, message: impl ToString) -> InterpretResult {
@@ -56,9 +70,9 @@ impl<'a> Vm<'a> {
     fn run(&mut self) -> InterpretResult {
         macro_rules! read_byte {
             () => {{
-                let instr: u8 = self.code()[self.ip()];
+                let byte: u8 = self.code()[self.ip()];
                 *self.ip_mut() += 1;
-                instr
+                byte
             }};
         }
 
@@ -145,6 +159,14 @@ impl<'a> Vm<'a> {
                     let value = self.stack.pop().unwrap();
                     self.stack[local_index as usize] = value;
                 }
+                Some(OpCode::LdUpVal) => todo!(),
+                Some(OpCode::StUpVal) => {
+                    let index = read_byte!();
+                    let value = self.stack.pop().unwrap();
+                    // let upvalue = self.call_stack.last().unwrap();
+                    // self.set_upvalue(upvalue, new_value)
+                    todo!();
+                }
                 Some(OpCode::Neg) => {
                     let val = self.stack.pop().unwrap();
                     match val {
@@ -207,36 +229,53 @@ impl<'a> Vm<'a> {
                 }
                 Some(OpCode::Calli) => {
                     match self.stack.pop().unwrap() {
-                        Value::Object(obj) => match obj.kind {
-                            ObjKind::Fn {
-                                ident: _,
-                                arity,
-                                ref chunk,
-                            } => {
+                        Value::Object(obj) => match &obj.kind {
+                            // ObjKind::Fn(Function {
+                            //     ident: _,
+                            //     arity,
+                            //     ref chunk,
+                            // }) => {
+                            //     let calli_arity = read_byte!();
+
+                            //     if arity != calli_arity as u32 {
+                            //         return self.runtime_error(format!(
+                            //             "Expected {} argument(s), received {}.",
+                            //             arity, calli_arity
+                            //         ));
+                            //     }
+
+                            //     // add new `CallFrame` to call stack
+                            //     self.call_stack.push(CallFrame {
+                            //         ip: 0,
+                            //         chunk: chunk.clone(),
+                            //         frame_pointer: self.stack.len() - arity as usize,
+                            //     });
+                            // }
+                            ObjKind::Closure(closure) => {
                                 let calli_arity = read_byte!();
 
-                                if arity != calli_arity as u32 {
+                                if closure.func.arity != calli_arity as u32 {
                                     return self.runtime_error(format!(
                                         "Expected {} argument(s), received {}.",
-                                        arity, calli_arity
+                                        closure.func.arity, calli_arity
                                     ));
                                 }
 
                                 // add new `CallFrame` to call stack
                                 self.call_stack.push(CallFrame {
                                     ip: 0,
-                                    chunk: chunk.clone(),
-                                    frame_pointer: self.stack.len() - arity as usize,
+                                    frame_pointer: self.stack.len() - closure.func.arity as usize,
+                                    closure: Rc::new(closure.clone()),
                                 });
                             }
                             ObjKind::NativeFn(NativeFn {
                                 ident: _,
                                 arity,
-                                ref func,
+                                func,
                             }) => {
                                 let calli_arity = read_byte!();
 
-                                if arity != calli_arity as u32 {
+                                if *arity != calli_arity as u32 {
                                     return self.runtime_error(format!(
                                         "Expected {} argument(s), received {}.",
                                         arity, calli_arity
@@ -244,12 +283,12 @@ impl<'a> Vm<'a> {
                                 }
 
                                 let stack_len = self.stack.len();
-                                let args = &mut self.stack[stack_len - arity as usize..stack_len];
-                                debug_assert_eq!(args.len(), arity as usize);
+                                let args = &mut self.stack[stack_len - *arity as usize..stack_len];
+                                debug_assert_eq!(args.len(), *arity as usize);
 
                                 let result = func(args);
                                 // remove arguments from stack
-                                for _i in 0..arity {
+                                for _i in 0..*arity {
                                     self.stack.pop().unwrap();
                                 }
                                 self.stack.push(result);
@@ -258,6 +297,31 @@ impl<'a> Vm<'a> {
                         },
                         _ => return self.runtime_error("Value is not a function."),
                     }
+                }
+                Some(OpCode::Closure) => {
+                    let func = match read_constant!() {
+                        Value::Object(obj) => match &obj.kind {
+                            ObjKind::Fn(function) => function.clone(),
+                            _ => unreachable!(),
+                        },
+                        _ => unreachable!(),
+                    };
+
+                    let upvalues_count = func.upvalues_count;
+                    let mut closure = Closure {
+                        func,
+                        upvalues: Vec::with_capacity(upvalues_count),
+                    };
+
+                    for _i in 0..upvalues_count {
+                        let is_local = read_byte!();
+                        let index = read_byte!();
+                        todo!();
+                    }
+
+                    self.stack.push(Value::Object(Rc::new(Obj {
+                        kind: ObjKind::Closure(closure),
+                    })));
                 }
                 None => panic!("Invalid instruction"),
             }
@@ -285,10 +349,20 @@ impl<'a> Vm<'a> {
 
     /// Executes the chunk
     pub fn interpret(&mut self, chunk: Chunk) -> InterpretResult {
+        let func = Function {
+            arity: 0,
+            chunk,
+            ident: "top".to_string(),
+            upvalues_count: 0, // cannot have any upvalues for top-level function
+        };
+        let closure = Closure {
+            func,
+            upvalues: Vec::new(),
+        };
         self.call_stack.push(CallFrame {
             ip: 0,            // start interpreting at first opcode
-            chunk,            // global chunk
             frame_pointer: 0, // global frame_pointer points to start of stack
+            closure: Rc::new(closure),
         });
 
         self.run()
@@ -300,22 +374,5 @@ impl<'a> Vm<'a> {
 
     pub fn restore_stack(&mut self, stack: ValueArray) {
         self.stack = stack;
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn new_call_frame() {
-        let cf = CallFrame {
-            chunk: Chunk::new("test".to_string()),
-            ip: 0,
-            frame_pointer: 0,
-        };
-
-        assert_eq!(cf.ip, 0);
-        assert_eq!(cf.frame_pointer, 0);
     }
 }

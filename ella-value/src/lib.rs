@@ -5,7 +5,7 @@ pub mod object;
 use std::fmt;
 use std::rc::Rc;
 
-use object::{NativeFn, Obj, ObjKind};
+use object::{Closure, Function, NativeFn, Obj, ObjKind};
 
 /// Symbols that are available globally.
 #[derive(Default)]
@@ -69,7 +69,8 @@ impl Value {
     fn print_obj(f: &mut fmt::Formatter<'_>, obj: &object::Obj) -> fmt::Result {
         match &obj.kind {
             ObjKind::Str(str) => write!(f, "{}", str),
-            ObjKind::Fn { ident, .. } => write!(f, "<fn {}>", ident),
+            ObjKind::Fn(Function { ident, .. }) => write!(f, "<fn {}>", ident),
+            ObjKind::Closure(Closure { func, .. }) => write!(f, "<fn closure {}>", func.ident),
             ObjKind::NativeFn(object::NativeFn { ident, .. }) => write!(f, "<native fn {}>", ident),
         }
     }

@@ -14,6 +14,12 @@ pub enum OpCode {
     /// Stores the top value on the stack into a local variable.
     /// *2 bytes (1 operand)*
     StLoc = 16,
+    /// Loads an upvalue onto the stack.
+    /// *2 bytes (1 operand)*
+    LdUpVal = 17,
+    /// Stores the top value on the stack into an upvalue.
+    /// *2 bytes (1 operand)*
+    StUpVal = 18,
     /// Negate the last value on the stack.
     /// *1 byte*
     Neg = 1,
@@ -44,6 +50,9 @@ pub enum OpCode {
     /// Arity is the operand.
     /// *2 bytes (1 operand)*
     Calli = 14,
+    /// Creates a closure with a constant function and pushes it onto the stack.
+    /// *Variable number of operands*
+    Closure = 19,
 }
 
 #[derive(Debug, Clone)]
