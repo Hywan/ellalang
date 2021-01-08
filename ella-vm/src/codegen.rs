@@ -11,7 +11,7 @@ use ella_value::object::{Function, Obj, ObjKind};
 use ella_value::{BuiltinVars, Value};
 use std::{collections::HashMap, rc::Rc};
 
-const DUMP_CHUNK: bool = true;
+const DUMP_CHUNK: bool = false;
 
 /// Generate bytecode from an abstract syntax tree.
 pub struct Codegen<'a> {
@@ -24,7 +24,10 @@ pub struct Codegen<'a> {
 }
 
 impl<'a> Codegen<'a> {
-    pub fn new(name: String, resolved_symbol_table: &'a ResolvedSymbolTable) -> Self {
+    pub fn new(
+        name: String,
+        resolved_symbol_table: &'a ResolvedSymbolTable,
+    ) -> Self {
         Self {
             chunk: Chunk::new(name),
             constant_strings: HashMap::new(),
@@ -78,7 +81,6 @@ impl<'a> Codegen<'a> {
     fn exit_scope(&mut self) {
         let var_count = self.local_var_counts.pop().unwrap();
         for _i in 0..var_count {
-            dbg!(OpCode::Pop);
             self.chunk.write_chunk(OpCode::Pop, 0);
         }
     }
@@ -193,7 +195,8 @@ impl<'a> Visitor for Codegen<'a> {
 
                 // Create a new `Codegen` instance, codegen the function, and add the chunk to the `ObjKind::Fn`.
                 let func_chunk = {
-                    let mut cg = Codegen::new(ident.clone(), self.resolved_symbol_table);
+                    let mut cg =
+                        Codegen::new(ident.clone(), self.resolved_symbol_table);
                     cg.codegen_function(stmt);
                     cg.into_inner_chunk()
                 };

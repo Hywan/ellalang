@@ -1,9 +1,9 @@
 use ella_parser::parser::Parser;
-use ella_passes::resolve::Resolver;
+use ella_passes::resolve::{ResolvedSymbolTable, Resolver};
 use ella_value::BuiltinVars;
 use ella_vm::vm::InterpretResult;
 use ella_vm::{codegen::Codegen, vm::Vm};
-use std::collections::HashMap;
+
 use std::io::{self, Write};
 
 mod builtin_functions;
@@ -30,8 +30,8 @@ fn repl() {
     };
 
     let mut vm = Vm::new(&builtin_vars);
-    let mut resolved_symbol_table = &HashMap::new();
-    let mut codegen = Codegen::new("<global>".to_string(), &resolved_symbol_table);
+    let mut resolved_symbol_table = &ResolvedSymbolTable::new();
+    let mut codegen = Codegen::new("<global>".to_string(), resolved_symbol_table);
     codegen.codegen_builtin_vars(&builtin_vars);
     vm.interpret(codegen.into_inner_chunk()); // load built in functions into memory
 
@@ -95,8 +95,8 @@ fn interpret_file_contents(source: &str) {
     };
 
     let mut vm = Vm::new(&builtin_vars);
-    let mut resolved_symbol_table = &HashMap::new();
-    let mut codegen = Codegen::new("<global>".to_string(), &resolved_symbol_table);
+    let mut resolved_symbol_table = &ResolvedSymbolTable::new();
+    let mut codegen = Codegen::new("<global>".to_string(), resolved_symbol_table);
     codegen.codegen_builtin_vars(&builtin_vars);
     vm.interpret(codegen.into_inner_chunk()); // load built in functions into memory
 

@@ -14,6 +14,7 @@ use ella_value::BuiltinVars;
 pub struct Symbol {
     ident: String,
     scope_depth: u32,
+    pub is_captured: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -26,8 +27,8 @@ pub type ResolvedSymbolTable = HashMap<*const Expr, ResolvedSymbol>;
 
 /// Variable resolution pass.
 pub struct Resolver<'a> {
-    /// A [`HashMap`] mapping all [`Expr::Identifier`] to variable offsets.
-    variable_offsets: ResolvedSymbolTable,
+    /// A [`HashMap`] mapping all [`Expr::Identifier`]s to [`ResolvedSymbol`]s.
+    resolved_symbol_table: ResolvedSymbolTable,
     /// A [`Vec`] of symbols that are currently in (lexical) scope.
     accessible_symbols: Vec<Symbol>,
     /// The current scope depth. `0` is global scope.
@@ -41,7 +42,7 @@ pub struct Resolver<'a> {
 impl<'a> Resolver<'a> {
     pub fn new(source: &'a Source) -> Self {
         Self {
-            variable_offsets: HashMap::new(),
+            resolved_symbol_table: HashMap::new(),
             accessible_symbols: Vec::new(),
             current_scope_depth: 0,
             current_func_offset: 0,
@@ -58,7 +59,7 @@ impl<'a> Resolver<'a> {
 
     /// Returns a [`HashMap`] mapping all [`Expr::Identifier`] to variable offsets.
     pub fn resolved_symbol_table(&self) -> &ResolvedSymbolTable {
-        &self.variable_offsets
+        &self.resolved_symbol_table
     }
 
     pub fn into_resolved_symbols(self) -> Vec<Symbol> {
@@ -81,11 +82,14 @@ impl<'a> Resolver<'a> {
             .collect();
     }
 
+    /// Adds a symbol to `self.accessible_symbols`.
     fn add_symbol(&mut self, ident: String) {
-        self.accessible_symbols.push(Symbol {
+        let symbol = Symbol {
             ident,
             scope_depth: self.current_scope_depth,
-        });
+            is_captured: false, // not captured by default
+        };
+        self.accessible_symbols.push(symbol);
     }
 
     /// Returns the offset of a resolved variable or `0` if cannot be resolved.
@@ -93,10 +97,16 @@ impl<'a> Resolver<'a> {
     /// # Params
     /// * `ident` - The identifier to resolve.
     /// * `span` - The span of the expression to resolve. This is used for error reporting in case the variable could not be resolved.
-    fn resolve_symbol(&self, ident: &str, span: Range<usize>) -> i32 {
-        for (i, symbol) in self.accessible_symbols.iter().enumerate().rev() {
-            if symbol.ident == ident && symbol.scope_depth == self.current_scope_depth {
-                return i as i32 - self.current_func_offset;
+    fn resolve_symbol(&mut self, ident: &str, span: Range<usize>) -> i32 {
+        for (i, symbol) in self.accessible_symbols.iter_mut().enumerate().rev() {
+            if symbol.ident == ident {
+                if symbol.scope_depth == self.current_scope_depth {
+                    return i as i32 - self.current_func_offset;
+                } else {
+                    // capture outer variable
+                    symbol.is_captured = true;
+                    return i as i32;
+                }
             }
         }
         self.source.errors.add_error(SyntaxError::new(
@@ -131,7 +141,7 @@ impl<'a> Visitor for Resolver<'a> {
         match expr {
             Expr::Identifier(ident) => {
                 let offset = self.resolve_symbol(ident, 0..0);
-                self.variable_offsets
+                self.resolved_symbol_table
                     .insert(expr as *const Expr, ResolvedSymbol { offset });
             }
             Expr::FnCall { ident, args } => {
@@ -140,7 +150,7 @@ impl<'a> Visitor for Resolver<'a> {
                 }
 
                 let offset = self.resolve_symbol(ident, 0..0);
-                self.variable_offsets
+                self.resolved_symbol_table
                     .insert(expr as *const Expr, ResolvedSymbol { offset });
             }
             _ => {}
