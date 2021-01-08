@@ -1,3 +1,5 @@
+use crate::ast::DeclarationMeta;
+
 use super::*;
 
 impl<'a> Parser<'a> {
@@ -58,7 +60,11 @@ impl<'a> Parser<'a> {
         self.expect(Token::Equals);
         let initializer = self.parse_expr();
         self.expect(Token::Semi);
-        Stmt::LetDeclaration { ident, initializer }
+        Stmt::LetDeclaration {
+            meta: DeclarationMeta::new(),
+            ident,
+            initializer,
+        }
     }
 
     fn parse_fn_declaration(&mut self) -> Stmt {
@@ -107,6 +113,7 @@ impl<'a> Parser<'a> {
         }
 
         Stmt::FnDeclaration {
+            meta: DeclarationMeta::new(),
             body,
             ident,
             params,

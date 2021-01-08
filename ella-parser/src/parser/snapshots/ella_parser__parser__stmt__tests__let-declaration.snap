@@ -3,6 +3,9 @@ source: ella-parser/src/parser/stmt.rs
 expression: "stmt(\"let x = 2;\")"
 ---
 LetDeclaration {
+    meta: DeclarationMeta {
+        is_captured_in_closure: false,
+    },
     ident: "x",
     initializer: NumberLit(
         2.0,

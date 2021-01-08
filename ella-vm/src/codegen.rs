@@ -11,7 +11,7 @@ use ella_value::object::{Function, Obj, ObjKind};
 use ella_value::{BuiltinVars, Value};
 use std::{collections::HashMap, rc::Rc};
 
-const DUMP_CHUNK: bool = false;
+const DUMP_CHUNK: bool = true;
 
 /// Generate bytecode from an abstract syntax tree.
 pub struct Codegen<'a> {
@@ -178,6 +178,7 @@ impl<'a> Visitor for Codegen<'a> {
 
         match stmt {
             Stmt::LetDeclaration {
+                meta: _,
                 ident: _,
                 initializer,
             } => {
@@ -185,6 +186,7 @@ impl<'a> Visitor for Codegen<'a> {
                 self.increment_var_count();
             }
             Stmt::FnDeclaration {
+                meta: _,
                 ident,
                 params,
                 body: _, // Body is codegen in a new `Codegen` instance.
