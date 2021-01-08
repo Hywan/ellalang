@@ -28,15 +28,15 @@ pub enum Expr {
 /// Metadata related to variable declarations.
 #[derive(Debug, Clone, PartialEq)]
 pub struct DeclarationMeta {
-    /// *Default:* `false`
+    /// *Default:* `None`
     /// Modified in variable resolution pass.
-    pub is_captured_in_closure: bool,
+    pub is_captured_in_closure: Option<bool>,
 }
 
 impl DeclarationMeta {
     pub fn new() -> Self {
         Self {
-            is_captured_in_closure: false,
+            is_captured_in_closure: Some(false),
         }
     }
 }

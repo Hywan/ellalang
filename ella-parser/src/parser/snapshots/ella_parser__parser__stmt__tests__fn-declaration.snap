@@ -4,7 +4,9 @@ expression: "stmt(\"fn foo() {}\")"
 ---
 FnDeclaration {
     meta: DeclarationMeta {
-        is_captured_in_closure: false,
+        is_captured_in_closure: Some(
+            false,
+        ),
     },
     ident: "foo",
     params: [],

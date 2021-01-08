@@ -3,6 +3,11 @@ source: ella-parser/src/parser/stmt.rs
 expression: "stmt(\"let x = 1 + 2;\")"
 ---
 LetDeclaration {
+    meta: DeclarationMeta {
+        is_captured_in_closure: Some(
+            false,
+        ),
+    },
     ident: "x",
     initializer: Binary {
         lhs: NumberLit(
