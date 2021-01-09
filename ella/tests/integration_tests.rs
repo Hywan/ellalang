@@ -33,17 +33,17 @@ fn interpret(source: &str) {
 
     let source = source.into();
     let mut parser = Parser::new(&source);
-    let mut ast = parser.parse_program();
+    let ast = parser.parse_program();
 
     let mut resolver = Resolver::new_with_existing_symbols(&source, resolved_symbols.clone());
-    resolver.resolve_top_level(&mut ast);
+    resolver.resolve_top_level(&ast);
     resolved_symbol_table = resolver.resolved_symbol_table();
 
     assert!(source.has_no_errors());
 
     let mut codegen = Codegen::new("<global>".to_string(), resolved_symbol_table);
 
-    codegen.codegen_function(&mut ast);
+    codegen.codegen_function(&ast);
 
     let chunk = codegen.into_inner_chunk();
     assert_eq!(vm.interpret(chunk), InterpretResult::Ok);

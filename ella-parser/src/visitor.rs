@@ -2,16 +2,16 @@
 
 use crate::ast::{Expr, Stmt};
 
-pub trait Visitor: Sized {
-    fn visit_expr(&mut self, expr: &mut Expr) {
+pub trait Visitor<'ast>: Sized {
+    fn visit_expr(&mut self, expr: &'ast Expr) {
         walk_expr(self, expr);
     }
-    fn visit_stmt(&mut self, stmt: &mut Stmt) {
+    fn visit_stmt(&mut self, stmt: &'ast Stmt) {
         walk_stmt(self, stmt);
     }
 }
 
-pub fn walk_expr(visitor: &mut impl Visitor, expr: &mut Expr) {
+pub fn walk_expr<'ast>(visitor: &mut impl Visitor<'ast>, expr: &'ast Expr) {
     match expr {
         Expr::NumberLit(_) => {}
         Expr::BoolLit(_) => {}
@@ -31,7 +31,7 @@ pub fn walk_expr(visitor: &mut impl Visitor, expr: &mut Expr) {
     }
 }
 
-pub fn walk_stmt(visitor: &mut impl Visitor, stmt: &mut Stmt) {
+pub fn walk_stmt<'ast>(visitor: &mut impl Visitor<'ast>, stmt: &'ast Stmt) {
     /// Iteratively visit all statements in a `Vec<Stmt>`.
     macro_rules! visit_stmt_list {
         ($visitor: expr, $body: expr) => {

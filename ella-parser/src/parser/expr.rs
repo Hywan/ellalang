@@ -12,7 +12,9 @@ impl<'a> Parser<'a> {
     fn parse_primary_expr(&mut self) -> Expr {
         // NOTE: prefix operators are handled here
         match self.current_token {
-            Token::NumberLit(_) | Token::BoolLit(_) | Token::StringLit(_) => self.parse_literal_expr(),
+            Token::NumberLit(_) | Token::BoolLit(_) | Token::StringLit(_) => {
+                self.parse_literal_expr()
+            }
             Token::Identifier(_) => self.parse_identifier_or_call_expr(),
             Token::LogicalNot => {
                 self.next();

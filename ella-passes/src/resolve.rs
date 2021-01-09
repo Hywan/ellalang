@@ -116,7 +116,7 @@ impl<'a> Resolver<'a> {
         -1
     }
 
-    pub fn resolve_top_level(&mut self, func: &mut Stmt) {
+    pub fn resolve_top_level(&mut self, func: &'a Stmt) {
         match func {
             Stmt::FnDeclaration { body, .. } => {
                 for stmt in body {
@@ -134,8 +134,8 @@ impl<'a> Resolver<'a> {
     }
 }
 
-impl<'a> Visitor for Resolver<'a> {
-    fn visit_expr(&mut self, expr: &mut Expr) {
+impl<'a> Visitor<'a> for Resolver<'a> {
+    fn visit_expr(&mut self, expr: &'a Expr) {
         walk_expr(self, expr);
 
         match expr {
@@ -157,7 +157,7 @@ impl<'a> Visitor for Resolver<'a> {
         }
     }
 
-    fn visit_stmt(&mut self, stmt: &mut Stmt) {
+    fn visit_stmt(&mut self, stmt: &'a Stmt) {
         // Do not use default walking logic.
 
         match stmt {

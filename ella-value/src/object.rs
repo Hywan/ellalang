@@ -38,7 +38,7 @@ impl UpValue {
     /// ```
     /// use ella_value::object::UpValue;
     /// use ella_value::Value;
-    /// 
+    ///
     /// let upvalue = UpValue::Open(10);
     /// assert!(upvalue.is_open());
     /// let upvalue = UpValue::Closed(Value::Bool(false));

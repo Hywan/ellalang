@@ -44,18 +44,18 @@ fn repl() {
 
         let source = input.as_str().into();
         let mut parser = Parser::new(&source);
-        let mut ast = parser.parse_repl_input();
+        let ast = parser.parse_repl_input();
         // eprintln!("{:#?}", ast);
 
         let mut resolver = Resolver::new_with_existing_symbols(&source, resolved_symbols.clone());
-        resolver.resolve_top_level(&mut ast);
+        resolver.resolve_top_level(&ast);
         resolved_symbol_table = resolver.resolved_symbol_table();
 
         eprintln!("{}", source.errors);
         if source.has_no_errors() {
             let mut codegen = Codegen::new("<global>".to_string(), resolved_symbol_table);
 
-            codegen.codegen_function(&mut ast);
+            codegen.codegen_function(&ast);
 
             let chunk = codegen.into_inner_chunk();
 
@@ -102,10 +102,10 @@ fn interpret_file_contents(source: &str) {
 
     let source = source.into();
     let mut parser = Parser::new(&source);
-    let mut ast = parser.parse_program();
+    let ast = parser.parse_program();
 
     let mut resolver = Resolver::new_with_existing_symbols(&source, resolved_symbols.clone());
-    resolver.resolve_top_level(&mut ast);
+    resolver.resolve_top_level(&ast);
     resolved_symbol_table = resolver.resolved_symbol_table();
 
     if !source.has_no_errors() {
@@ -113,7 +113,7 @@ fn interpret_file_contents(source: &str) {
     } else {
         let mut codegen = Codegen::new("<global>".to_string(), resolved_symbol_table);
 
-        codegen.codegen_function(&mut ast);
+        codegen.codegen_function(&ast);
 
         let chunk = codegen.into_inner_chunk();
         match vm.interpret(chunk) {

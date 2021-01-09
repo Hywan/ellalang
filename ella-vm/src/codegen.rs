@@ -24,10 +24,7 @@ pub struct Codegen<'a> {
 }
 
 impl<'a> Codegen<'a> {
-    pub fn new(
-        name: String,
-        resolved_symbol_table: &'a ResolvedSymbolTable,
-    ) -> Self {
+    pub fn new(name: String, resolved_symbol_table: &'a ResolvedSymbolTable) -> Self {
         Self {
             chunk: Chunk::new(name),
             constant_strings: HashMap::new(),
@@ -47,7 +44,7 @@ impl<'a> Codegen<'a> {
     /// To get the generated [`Chunk`], call [`Codegen::into_inner_chunk`].
     /// # Params
     /// * `func` - The function to codegen for.
-    pub fn codegen_function(&mut self, func: &mut Stmt) {
+    pub fn codegen_function(&mut self, func: &'a Stmt) {
         match func {
             Stmt::FnDeclaration { body, .. } => {
                 for stmt in body {
@@ -78,6 +75,10 @@ impl<'a> Codegen<'a> {
         *self.local_var_counts.last_mut().unwrap() += 1;
     }
 
+    // fn test(&mut self, stmt: &Stmt) {
+    //     todo!();
+    // }
+
     fn exit_scope(&mut self) {
         let var_count = self.local_var_counts.pop().unwrap();
         for _i in 0..var_count {
@@ -86,8 +87,8 @@ impl<'a> Codegen<'a> {
     }
 }
 
-impl<'a> Visitor for Codegen<'a> {
-    fn visit_expr(&mut self, expr: &mut Expr) {
+impl<'a> Visitor<'a> for Codegen<'a> {
+    fn visit_expr(&mut self, expr: &'a Expr) {
         walk_expr(self, expr);
 
         match expr {
@@ -173,7 +174,7 @@ impl<'a> Visitor for Codegen<'a> {
         }
     }
 
-    fn visit_stmt(&mut self, stmt: &mut Stmt) {
+    fn visit_stmt(&mut self, stmt: &'a Stmt) {
         // Do not use default walking logic.
 
         match stmt {
@@ -184,6 +185,7 @@ impl<'a> Visitor for Codegen<'a> {
             } => {
                 self.visit_expr(initializer); // Push value of expression onto top of stack.
                 self.increment_var_count();
+                // self.test(&stmt);
             }
             Stmt::FnDeclaration {
                 meta: _,
@@ -197,8 +199,7 @@ impl<'a> Visitor for Codegen<'a> {
 
                 // Create a new `Codegen` instance, codegen the function, and add the chunk to the `ObjKind::Fn`.
                 let func_chunk = {
-                    let mut cg =
-                        Codegen::new(ident.clone(), self.resolved_symbol_table);
+                    let mut cg = Codegen::new(ident.clone(), self.resolved_symbol_table);
                     cg.codegen_function(stmt);
                     cg.into_inner_chunk()
                 };
