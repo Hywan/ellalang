@@ -149,5 +149,32 @@ mod functions {
                 assert_eq(addThree(2), 5);"#,
             );
         }
+
+        #[test]
+        fn capture_by_ref() {
+            interpret(
+                r#"
+                let globalSet = 0;
+                let globalGet = 0;
+
+                fn main() {
+                    let a = "initial";
+
+                    fn set() { a = "updated"; }
+                    fn get() { return a; }
+
+                    globalSet = set;
+                    globalGet = get;
+                }
+
+                main();
+                assert_eq(globalGet(), "initial");
+                globalSet();
+                assert_eq(globalGet(), "updated");"#,
+            );
+        }
+
+        #[test]
+        fn nested_upvalues() {}
     }
 }

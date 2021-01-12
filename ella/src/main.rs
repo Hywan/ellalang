@@ -89,7 +89,7 @@ fn interpret_file_contents(source: &str) {
     let dummy_source = "".into();
     let mut resolver = Resolver::new(&dummy_source);
     resolver.resolve_builtin_vars(&builtin_vars);
-    let symbol_table = resolver.symbol_table();
+    let mut symbol_table = resolver.symbol_table();
     let accessible_symbols = resolver.accessible_symbols();
 
     let mut vm = Vm::new(&builtin_vars);
@@ -104,6 +104,7 @@ fn interpret_file_contents(source: &str) {
 
     let mut resolver = Resolver::new_with_existing_accessible_symbols(&source, accessible_symbols.clone());
     resolver.resolve_top_level(&ast);
+    symbol_table = resolver.symbol_table();
     resolved_symbol_table = resolver.resolved_symbol_table();
 
     if !source.has_no_errors() {

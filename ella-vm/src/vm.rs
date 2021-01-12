@@ -56,9 +56,12 @@ impl<'a> Vm<'a> {
     }
 
     fn set_upvalue(&mut self, upvalue: Rc<RefCell<UpValue>>, new_value: Value) {
-        match *upvalue.borrow_mut() {
+        let old_upvalue = upvalue.borrow().clone();
+        match old_upvalue {
             UpValue::Open(index) => self.stack[index] = new_value,
-            UpValue::Closed(ref _value) => *upvalue.borrow_mut() = UpValue::Closed(new_value),
+            UpValue::Closed(ref _value) => {
+                upvalue.replace(UpValue::Closed(new_value));
+            }
         }
     }
 

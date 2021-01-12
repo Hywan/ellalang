@@ -170,8 +170,16 @@ impl<'a> Visitor<'a> for Codegen<'a> {
                         .resolved_symbol_table
                         .get(&(lhs.as_ref() as *const Expr))
                         .unwrap();
-                    self.chunk.write_chunk(OpCode::StLoc, 0);
-                    self.chunk.write_chunk(resolved_symbol.offset as u8, 0);
+                    match resolved_symbol.is_upvalue {
+                        true => {
+                            self.chunk.write_chunk(OpCode::StUpVal, 0);
+                            self.chunk.write_chunk(resolved_symbol.offset as u8, 0);
+                        }
+                        false => {
+                            self.chunk.write_chunk(OpCode::StLoc, 0);
+                            self.chunk.write_chunk(resolved_symbol.offset as u8, 0);
+                        }
+                    }
                 }
                 Token::EqualsEquals => self.chunk.write_chunk(OpCode::Eq, 0),
                 Token::NotEquals => {

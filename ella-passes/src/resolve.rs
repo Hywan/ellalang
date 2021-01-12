@@ -182,7 +182,7 @@ impl<'a> Visitor<'a> for Resolver<'a> {
                         expr as *const Expr,
                         ResolvedSymbol {
                             offset: offset as i32,
-                            is_upvalue: symbol.borrow().is_captured,
+                            is_upvalue: self.current_scope_depth > symbol.borrow().scope_depth,
                         },
                     );
                 }
@@ -198,7 +198,7 @@ impl<'a> Visitor<'a> for Resolver<'a> {
                         expr as *const Expr,
                         ResolvedSymbol {
                             offset: offset as i32,
-                            is_upvalue: symbol.borrow().is_captured,
+                            is_upvalue: self.current_scope_depth > symbol.borrow().scope_depth,
                         },
                     );
                 }
@@ -244,7 +244,11 @@ impl<'a> Visitor<'a> for Resolver<'a> {
                 self.exit_scope();
 
                 // patch self.symbol_table with upvalues
-                self.symbol_table.get(&(stmt as *const Stmt)).unwrap().borrow_mut().upvalues = mem::take(&mut self.current_upvalues);
+                self.symbol_table
+                    .get(&(stmt as *const Stmt))
+                    .unwrap()
+                    .borrow_mut()
+                    .upvalues = mem::take(&mut self.current_upvalues);
 
                 self.current_func_offset = old_func_offset;
                 self.current_upvalues = old_upvalues;
