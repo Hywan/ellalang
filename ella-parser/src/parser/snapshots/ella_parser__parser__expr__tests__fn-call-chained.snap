@@ -1,0 +1,31 @@
+---
+source: ella-parser/src/parser/expr.rs
+expression: "expr(\"foo(1, 2)(3)(4)\")"
+---
+FnCall {
+    callee: FnCall {
+        callee: FnCall {
+            callee: Identifier(
+                "foo",
+            ),
+            args: [
+                NumberLit(
+                    1.0,
+                ),
+                NumberLit(
+                    2.0,
+                ),
+            ],
+        },
+        args: [
+            NumberLit(
+                3.0,
+            ),
+        ],
+    },
+    args: [
+        NumberLit(
+            4.0,
+        ),
+    ],
+}

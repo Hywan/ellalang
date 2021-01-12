@@ -3,7 +3,7 @@
 use ella_parser::{
     ast::{Expr, Stmt},
     lexer::Token,
-    visitor::{walk_expr, Visitor},
+    visitor::Visitor,
 };
 use ella_passes::resolve::{ResolvedSymbolTable, Symbol, SymbolTable};
 use ella_value::chunk::{Chunk, OpCode};
@@ -100,7 +100,7 @@ impl<'a> Codegen<'a> {
 
 impl<'a> Visitor<'a> for Codegen<'a> {
     fn visit_expr(&mut self, expr: &'a Expr) {
-        walk_expr(self, expr);
+        // Do not use default walking logic.
 
         match expr {
             Expr::NumberLit(val) => {
@@ -141,70 +141,67 @@ impl<'a> Visitor<'a> for Codegen<'a> {
                     }
                 }
             }
-            Expr::FnCall { ident: _, args } => {
+            Expr::FnCall { callee, args } => {
                 let arity = args.len() as u8;
-                let resolved_symbol = *self
-                    .resolved_symbol_table
-                    .get(&(expr as *const Expr))
-                    .unwrap();
-                match resolved_symbol.is_upvalue {
-                    true => {
-                        self.chunk.write_chunk(OpCode::LdUpVal, 0);
-                        self.chunk.write_chunk(resolved_symbol.offset as u8, 0);
-                    }
-                    false => {
-                        self.chunk.write_chunk(OpCode::LdLoc, 0);
-                        self.chunk.write_chunk(resolved_symbol.offset as u8, 0);
-                    }
+                for arg in args {
+                    self.visit_expr(arg);
                 }
+                self.visit_expr(callee);
                 self.chunk.write_chunk(OpCode::Calli, 0);
                 self.chunk.write_chunk(arity, 0);
             }
-            Expr::Binary { lhs, op, rhs: _ } => match op {
-                Token::Plus => self.chunk.write_chunk(OpCode::Add, 0),
-                Token::Minus => self.chunk.write_chunk(OpCode::Sub, 0),
-                Token::Asterisk => self.chunk.write_chunk(OpCode::Mul, 0),
-                Token::Slash => self.chunk.write_chunk(OpCode::Div, 0),
-                Token::Equals => {
-                    let resolved_symbol = *self
-                        .resolved_symbol_table
-                        .get(&(lhs.as_ref() as *const Expr))
-                        .unwrap();
-                    match resolved_symbol.is_upvalue {
-                        true => {
-                            self.chunk.write_chunk(OpCode::StUpVal, 0);
-                            self.chunk.write_chunk(resolved_symbol.offset as u8, 0);
-                        }
-                        false => {
-                            self.chunk.write_chunk(OpCode::StLoc, 0);
-                            self.chunk.write_chunk(resolved_symbol.offset as u8, 0);
+            Expr::Binary { lhs, op, rhs } => {
+                self.visit_expr(lhs);
+                self.visit_expr(rhs);
+                match op {
+                    Token::Plus => self.chunk.write_chunk(OpCode::Add, 0),
+                    Token::Minus => self.chunk.write_chunk(OpCode::Sub, 0),
+                    Token::Asterisk => self.chunk.write_chunk(OpCode::Mul, 0),
+                    Token::Slash => self.chunk.write_chunk(OpCode::Div, 0),
+                    Token::Equals => {
+                        let resolved_symbol = *self
+                            .resolved_symbol_table
+                            .get(&(lhs.as_ref() as *const Expr))
+                            .unwrap();
+                        match resolved_symbol.is_upvalue {
+                            true => {
+                                self.chunk.write_chunk(OpCode::StUpVal, 0);
+                                self.chunk.write_chunk(resolved_symbol.offset as u8, 0);
+                            }
+                            false => {
+                                self.chunk.write_chunk(OpCode::StLoc, 0);
+                                self.chunk.write_chunk(resolved_symbol.offset as u8, 0);
+                            }
                         }
                     }
-                }
-                Token::EqualsEquals => self.chunk.write_chunk(OpCode::Eq, 0),
-                Token::NotEquals => {
-                    self.chunk.write_chunk(OpCode::Eq, 0);
-                    self.chunk.write_chunk(OpCode::Not, 0);
-                }
-                Token::LessThan => self.chunk.write_chunk(OpCode::Less, 0),
-                Token::LessThanEquals => {
-                    // a <= b equivalent to !(a > b)
-                    self.chunk.write_chunk(OpCode::Greater, 0);
-                    self.chunk.write_chunk(OpCode::Not, 0);
-                }
-                Token::GreaterThan => self.chunk.write_chunk(OpCode::Greater, 0),
-                Token::GreaterThanEquals => {
-                    // a >= b equivalent to !(a < b)
-                    self.chunk.write_chunk(OpCode::Less, 0);
-                    self.chunk.write_chunk(OpCode::Not, 0);
-                }
-                _ => unreachable!(),
-            },
-            Expr::Unary { op, .. } => match op {
-                Token::LogicalNot => self.chunk.write_chunk(OpCode::Not, 0),
-                Token::Minus => self.chunk.write_chunk(OpCode::Neg, 0),
-                _ => unreachable!(),
-            },
+                    Token::EqualsEquals => self.chunk.write_chunk(OpCode::Eq, 0),
+                    Token::NotEquals => {
+                        self.chunk.write_chunk(OpCode::Eq, 0);
+                        self.chunk.write_chunk(OpCode::Not, 0);
+                    }
+                    Token::LessThan => self.chunk.write_chunk(OpCode::Less, 0),
+                    Token::LessThanEquals => {
+                        // a <= b equivalent to !(a > b)
+                        self.chunk.write_chunk(OpCode::Greater, 0);
+                        self.chunk.write_chunk(OpCode::Not, 0);
+                    }
+                    Token::GreaterThan => self.chunk.write_chunk(OpCode::Greater, 0),
+                    Token::GreaterThanEquals => {
+                        // a >= b equivalent to !(a < b)
+                        self.chunk.write_chunk(OpCode::Less, 0);
+                        self.chunk.write_chunk(OpCode::Not, 0);
+                    }
+                    _ => unreachable!(),
+                };
+            }
+            Expr::Unary { op, arg } => {
+                self.visit_expr(arg);
+                match op {
+                    Token::LogicalNot => self.chunk.write_chunk(OpCode::Not, 0),
+                    Token::Minus => self.chunk.write_chunk(OpCode::Neg, 0),
+                    _ => unreachable!(),
+                };
+            }
             Expr::Error => unreachable!(),
         }
     }

@@ -60,7 +60,7 @@ impl<'a> Parser<'a> {
         if let Some(Stmt::ExprStmt(expr)) = body.last_mut() {
             *expr = Expr::FnCall {
                 args: vec![expr.clone()],
-                ident: "println".to_string(),
+                callee: Box::new(Expr::Identifier("println".to_string())),
             }
         }
 

@@ -3,6 +3,8 @@ source: ella-parser/src/parser/expr.rs
 expression: "expr(\"foo()\")"
 ---
 FnCall {
-    ident: "foo",
+    callee: Identifier(
+        "foo",
+    ),
     args: [],
 }

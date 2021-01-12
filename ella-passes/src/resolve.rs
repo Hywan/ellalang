@@ -202,20 +202,10 @@ impl<'a> Visitor<'a> for Resolver<'a> {
                     );
                 }
             }
-            Expr::FnCall { ident, args } => {
+            Expr::FnCall { callee, args } => {
+                self.visit_expr(callee);
                 for expr in args {
                     self.visit_expr(expr);
-                }
-
-                let symbol = self.resolve_symbol(ident, 0..0);
-                if let Some((offset, symbol)) = symbol {
-                    self.resolved_symbol_table.insert(
-                        expr as *const Expr,
-                        ResolvedSymbol {
-                            offset: offset as i32,
-                            is_upvalue: self.current_scope_depth > symbol.borrow().scope_depth,
-                        },
-                    );
                 }
             }
             _ => {}

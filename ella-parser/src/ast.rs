@@ -9,7 +9,7 @@ pub enum Expr {
     Identifier(String),
     /// A function call (e.g. `foo(1, bar, baz())`).
     FnCall {
-        ident: String,
+        callee: Box<Expr>,
         args: Vec<Expr>,
     },
     /// A binary expression (e.g. `1+1`).

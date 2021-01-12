@@ -41,9 +41,48 @@ impl<'a> Parser<'a> {
     /// Parses an expression with the specified `min_bp`.
     /// To parse any expression use, [`Self::parse_expr`].
     fn parse_expr_bp(&mut self, min_bp: u8) -> Expr {
-        let mut lhs = self.parse_primary_expr();
+        let mut lhs = self.parse_primary_expr(); // TODO: move handle prefix into parse_expr_bp
 
         loop {
+            // handle postfix
+            if let Some((l_bp, ())) = self.current_token.postfix_bp() {
+                if l_bp < min_bp {
+                    break;
+                }
+                let postfix_op = self.current_token.clone();
+                self.next();
+
+                match postfix_op {
+                    Token::OpenParen => {
+                        // parse call expression
+                        let mut args = Vec::new();
+
+                        if !self.eat(Token::CloseParen) {
+                            loop {
+                                args.push(self.parse_expr());
+
+                                if self.eat(Token::CloseParen) {
+                                    break;
+                                } else if !self.eat(Token::Comma) {
+                                    self.next();
+                                    self.unexpected();
+                                    break;
+                                }
+                            }
+                        }
+
+                        lhs = Expr::FnCall {
+                            callee: Box::new(lhs),
+                            args,
+                        }
+                    }
+                    _ => unreachable!(),
+                }
+
+                continue;
+            }
+
+            // handle infix
             let (l_bp, r_bp) = match self.current_token.binop_bp() {
                 Some(bp) => bp,
                 None => break, // not a valid binop, stop parsing
@@ -96,33 +135,12 @@ impl<'a> Parser<'a> {
                 ident
             }
             _ => {
+                self.next();
                 self.unexpected();
                 return Expr::Error;
             }
         };
-
-        if self.eat(Token::OpenParen) {
-            // parse call expression
-            let mut args = Vec::new();
-
-            if !self.eat(Token::CloseParen) {
-                loop {
-                    args.push(self.parse_expr());
-
-                    if self.eat(Token::CloseParen) {
-                        break;
-                    } else if !self.eat(Token::Comma) {
-                        self.unexpected();
-                        break;
-                    }
-                }
-            }
-
-            Expr::FnCall { ident, args }
-        } else {
-            // parse identifier expression
-            Expr::Identifier(ident)
-        }
+        Expr::Identifier(ident)
     }
 }
 
@@ -165,5 +183,6 @@ mod tests {
         assert_debug_snapshot!("fn-call", expr("foo()"));
         assert_debug_snapshot!("fn-call-with-args", expr("foo(1, bar)"));
         assert_debug_snapshot!("fn-call-with-nested-args", expr("foo(1, bar, baz())"));
+        assert_debug_snapshot!("fn-call-chained", expr("foo(1, 2)(3)(4)"));
     }
 }

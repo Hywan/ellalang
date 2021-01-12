@@ -17,7 +17,8 @@ pub fn walk_expr<'ast>(visitor: &mut impl Visitor<'ast>, expr: &'ast Expr) {
         Expr::BoolLit(_) => {}
         Expr::StringLit(_) => {}
         Expr::Identifier(_) => {}
-        Expr::FnCall { ident: _, args } => {
+        Expr::FnCall { callee, args } => {
+            visitor.visit_expr(callee);
             for arg in args {
                 visitor.visit_expr(arg);
             }
