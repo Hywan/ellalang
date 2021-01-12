@@ -47,9 +47,9 @@ pub fn assert_eq(args: &mut [Value]) -> Value {
 
 pub fn clock(_args: &mut [Value]) -> Value {
     let now = std::time::SystemTime::now();
-    let since_the_epoch_ns = now
+    let since_the_epoch_secs = now
         .duration_since(std::time::UNIX_EPOCH)
         .expect("Time went backwards")
         .as_secs_f64();
-    Value::Number(since_the_epoch_ns)
+    Value::Number(since_the_epoch_secs)
 }
