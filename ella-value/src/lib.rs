@@ -1,3 +1,9 @@
+//! Runtime value representation.
+//!
+//! Important types in this crate are:
+//! * [`Value`] - Represents a variable value at runtime.
+//! * [`Obj`] and [`ObjKind`] - Represents a heap allocated value at runtime.
+
 pub mod chunk;
 pub mod disassemble;
 pub mod object;
@@ -18,10 +24,12 @@ impl BuiltinVars {
         Self::default()
     }
 
+    /// Add a builtin symbol.
     pub fn add_value(&mut self, ident: String, value: Value) {
         self.values.push((ident, value));
     }
 
+    /// Add a builtin native function. Alias for [`Self::add_value`] for simplifying [`ObjKind::NativeFn`] creation.
     pub fn add_native_fn(
         &mut self,
         ident: impl ToString,
@@ -39,6 +47,7 @@ impl BuiltinVars {
     }
 }
 
+/// Represents a runtime value. The [`Value::Object`] variant holds a [`Rc`] to the heap.
 #[derive(Clone, PartialEq, PartialOrd)]
 pub enum Value {
     Number(f64),
@@ -47,18 +56,18 @@ pub enum Value {
 }
 
 impl Value {
-    /// Attempts to cast the `Value` into a `&str` or `None` if wrong type.
+    /// Attempts to cast the [`Value`] into a `&str` or `None` if wrong type.
     pub fn cast_to_str(&self) -> Option<&str> {
         match self {
             Self::Object(obj) => match &obj.kind {
                 object::ObjKind::Str(string) => Some(&string),
-                #[allow(unreachable_patterns)] // when new object types are added
                 _ => None,
             },
             _ => None,
         }
     }
 
+    /// Attempts to cast the [`Value`] into a `f64` or `None` if wrong type.
     pub fn cast_to_number(&self) -> Option<f64> {
         match self {
             Self::Number(val) => Some(*val),
@@ -66,6 +75,7 @@ impl Value {
         }
     }
 
+    /// Prints the object with the specified [`fmt::Formatter`].
     fn print_obj(f: &mut fmt::Formatter<'_>, obj: &object::Obj) -> fmt::Result {
         match &obj.kind {
             ObjKind::Str(str) => write!(f, "{}", str),
@@ -92,4 +102,5 @@ impl fmt::Debug for Value {
     }
 }
 
+/// Type alias for `Vec<Value>`.
 pub type ValueArray = Vec<Value>;

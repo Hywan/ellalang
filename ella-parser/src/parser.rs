@@ -1,3 +1,5 @@
+//! Parse a [`Source`] into an AST (abstract syntax tree).
+
 use crate::ast::{Expr, Stmt};
 use crate::lexer::Token;
 use ella_source::{Source, SyntaxError};
@@ -9,6 +11,7 @@ mod stmt;
 pub use expr::*;
 pub use stmt::*;
 
+/// A parser instance.
 pub struct Parser<'a> {
     /// Cached token for peeking.
     current_token: Token,
@@ -18,6 +21,7 @@ pub struct Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
+    /// Create a new [`Parser`] with the `source`.
     pub fn new(source: &'a Source<'a>) -> Self {
         let mut lexer = Token::lexer(source.content);
         Self {
@@ -72,7 +76,7 @@ impl<'a> Parser<'a> {
     }
 }
 
-/// Parse utilities
+/// Parser utilities.
 impl<'a> Parser<'a> {
     fn next(&mut self) -> Token {
         let token = self.lexer.next().unwrap_or(Token::Eof);

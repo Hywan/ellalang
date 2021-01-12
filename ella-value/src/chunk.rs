@@ -1,7 +1,9 @@
+//! Definitions for [`Chunk`] and [`OpCode`].
+
 use crate::{Value, ValueArray};
 use enum_primitive_derive::Primitive;
 
-/// Represents an opcode. Should only takes up 1 byte (`u8`).
+/// Represents an opcode. Internally represented using 1 byte (`u8`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Primitive)]
 #[repr(u8)]
 pub enum OpCode {
@@ -58,17 +60,24 @@ pub enum OpCode {
     Closure = 19,
 }
 
+/// Represents a chunk of bytecode.
 #[derive(Debug, Clone)]
 pub struct Chunk {
+    /// A [`Vec`] of [`OpCode`]s and operands.
     pub code: Vec<u8>, // a byte array
     /// Source code positions for each byte in `code`.
     pub lines: Vec<usize>,
+    /// Constant table for this [`Chunk`].
     pub constants: ValueArray,
+    /// The name of the chunk.
+    /// For most cases, should be the name of the function.
+    /// If the [`Chunk`] is the top-level chunk, the name should `<global>`.
     pub name: String,
 }
 
 /// `u8` and `OpCode` should implement this trait.
 pub trait ToByteCode {
+    /// Transforms `self` into an `u8`.
     fn to_byte_code(&self) -> u8;
 }
 
@@ -85,6 +94,14 @@ impl ToByteCode for u8 {
 }
 
 impl Chunk {
+    /// Create an empty chunk with the specified `name`.
+    /// 
+    /// # Example
+    /// ```
+    /// use ella_value::chunk::Chunk;
+    /// let chunk = Chunk::new("my_chunk".to_string());
+    /// assert_eq!(chunk.name, "my_chunk");
+    /// ```
     pub fn new(name: String) -> Self {
         Self {
             code: Vec::new(),
@@ -94,7 +111,21 @@ impl Chunk {
         }
     }
 
-    /// Write data to the `Chunk`.
+    /// Write data to the [`Chunk`]. This can be an [`OpCode`] or an operand (`u8`).
+    /// 
+    /// # Params
+    /// * `opcode` - The data to write to the chunk.
+    /// * `line` - The original source line. This is used for runtime error messages and debugging.
+    /// 
+    /// # Example
+    /// ```
+    /// use ella_value::chunk::{Chunk, OpCode};
+    /// let mut chunk = Chunk::new("my_chunk".to_string());
+    /// chunk.write_chunk(OpCode::Ldc, 0);
+    /// chunk.write_chunk(1, 0);
+    /// assert_eq!(chunk.code, vec![0, 1]);
+    /// assert_eq!(chunk.lines, vec![0, 0]);
+    /// ```
     pub fn write_chunk(&mut self, opcode: impl ToByteCode, line: usize) {
         debug_assert_eq!(self.code.len(), self.lines.len());
         self.code.push(opcode.to_byte_code());
@@ -104,6 +135,19 @@ impl Chunk {
 
     /// Add a constant to the constant table.
     /// Returns the index of the added constant.
+    /// 
+    /// # Example
+    /// ```
+    /// use ella_value::chunk::Chunk;
+    /// use ella_value::Value;
+    /// let mut chunk = Chunk::new("my_chunk".to_string());
+    /// let index = chunk.add_constant(Value::Bool(true));
+    /// assert_eq!(index, 0);
+    /// assert_eq!(chunk.constants, vec![Value::Bool(true)]);
+    /// let index = chunk.add_constant(Value::Number(2.0));
+    /// assert_eq!(index, 1);
+    /// assert_eq!(chunk.constants, vec![Value::Bool(true), Value::Number(2.0)]);
+    /// ```
     pub fn add_constant(&mut self, value: Value) -> u8 {
         self.constants.push(value);
         let loc = self.constants.len() - 1;

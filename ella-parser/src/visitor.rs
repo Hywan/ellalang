@@ -2,15 +2,23 @@
 
 use crate::ast::{Expr, Stmt};
 
+/// Visitor trait for AST walking logic.
+/// Implement this trait by overriding the hooks (`visit_*` methods).
 pub trait Visitor<'ast>: Sized {
+    /// Hook called when visiting an [`Expr`].
+    /// If this method has a custom implementation, call [`walk_expr`] to use default walking logic.
     fn visit_expr(&mut self, expr: &'ast Expr) {
         walk_expr(self, expr);
     }
+
+    /// Hook called when visiting a [`Stmt`].
+    /// If this method has a custom implementation, call [`walk_stmt`] to use default walking logic.
     fn visit_stmt(&mut self, stmt: &'ast Stmt) {
         walk_stmt(self, stmt);
     }
 }
 
+/// Walking logic for visiting all child nodes of an [`Expr`].
 pub fn walk_expr<'ast>(visitor: &mut impl Visitor<'ast>, expr: &'ast Expr) {
     match expr {
         Expr::NumberLit(_) => {}
@@ -32,6 +40,7 @@ pub fn walk_expr<'ast>(visitor: &mut impl Visitor<'ast>, expr: &'ast Expr) {
     }
 }
 
+/// Walking logic for visiting all child nodes of a [`Stmt`].
 pub fn walk_stmt<'ast>(visitor: &mut impl Visitor<'ast>, stmt: &'ast Stmt) {
     /// Iteratively visit all statements in a `Vec<Stmt>`.
     macro_rules! visit_stmt_list {

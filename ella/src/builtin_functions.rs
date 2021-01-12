@@ -2,6 +2,7 @@ use ella_value::{BuiltinVars, Value};
 
 #[allow(dead_code)] // This appears to be a bug with rustc. These functions are used in both main.rs and lib.rs
 
+/// Returns the default [`BuiltinVars`] that should be used.
 pub fn default_builtin_vars() -> BuiltinVars {
     let mut builtin_vars = BuiltinVars::new();
     builtin_vars.add_native_fn("print", &print, 1);

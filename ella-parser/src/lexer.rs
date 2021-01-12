@@ -1,5 +1,8 @@
+//! Source code lexing (aka scanning, tokenizing).
+
 use logos::Logos;
 
+/// Represents a source code `Token`.
 #[derive(Debug, Logos, Clone, PartialEq)]
 pub enum Token {
     // literals

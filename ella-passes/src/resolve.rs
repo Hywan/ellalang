@@ -19,12 +19,14 @@ pub struct Symbol {
     pub upvalues: Vec<ResolvedUpValue>,
 }
 
+/// Represents a resolved upvalue (captured variable).
 #[derive(Debug, Clone, PartialEq)]
 pub struct ResolvedUpValue {
     pub is_local: bool,
     pub index: i32,
 }
 
+/// Represents a resolved symbol (identifier or function call expressions).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ResolvedSymbol {
     /// The offset relative to the current function's offset (`current_func_offset`).
@@ -32,7 +34,9 @@ pub struct ResolvedSymbol {
     pub is_upvalue: bool,
 }
 
+/// A [`HashMap`] mapping [`Stmt`]s to [`Symbol`]s.
 pub type SymbolTable = HashMap<*const Stmt, Rc<RefCell<Symbol>>>;
+/// A [`HashMap`] mapping [`Expr`] to [`ResolvedSymbol`]s.
 pub type ResolvedSymbolTable = HashMap<*const Expr, ResolvedSymbol>;
 
 /// Variable resolution pass.
@@ -48,11 +52,13 @@ pub struct Resolver<'a> {
     /// Every time a new function scope is created, `current_func_offset` should be set to `self.resolved_symbols.len()`.
     /// When exiting a function scope, the value should be reverted to previous value.
     current_func_offset: i32,
+    /// A stack of current function upvalues.
     function_upvalues: Vec<Vec<ResolvedUpValue>>,
     source: &'a Source<'a>,
 }
 
 impl<'a> Resolver<'a> {
+    /// Create a new empty `Resolver`.
     pub fn new(source: &'a Source) -> Self {
         Self {
             symbol_table: SymbolTable::new(),
@@ -65,6 +71,9 @@ impl<'a> Resolver<'a> {
         }
     }
 
+    /// Create a new `Resolver` with existing accessible symbols.
+    /// This method is used to implement REPL functionality (for restoring global variables).
+    /// See [`Self::accessible_symbols`].
     pub fn new_with_existing_accessible_symbols(
         source: &'a Source,
         resolved_symbols: Vec<Rc<RefCell<Symbol>>>,
@@ -75,6 +84,7 @@ impl<'a> Resolver<'a> {
         }
     }
 
+    /// Returns the generated `SymbolTable`.
     pub fn symbol_table(&self) -> &SymbolTable {
         &self.symbol_table
     }
@@ -84,14 +94,19 @@ impl<'a> Resolver<'a> {
         &self.resolved_symbol_table
     }
 
+    /// Returns the list of accessible symbols.
+    /// This method is used to implement REPL functionality (for restoring global variables).
+    /// See [`Self::new_with_existing_accessible_symbols`].
     pub fn accessible_symbols(&self) -> &Vec<Rc<RefCell<Symbol>>> {
         &self.accessible_symbols
     }
 
+    /// Enter a scope.
     fn enter_scope(&mut self) {
         self.current_scope_depth += 1;
     }
 
+    /// Exit a scope. Removes all declarations introduced in previous scope.
     fn exit_scope(&mut self) {
         self.current_scope_depth -= 1;
 
@@ -104,7 +119,7 @@ impl<'a> Resolver<'a> {
             .collect();
     }
 
-    /// Adds a symbol to `self.accessible_symbols`.
+    /// Adds a symbol to `self.accessible_symbols` and `self.symbol_table`.
     fn add_symbol(&mut self, ident: String, stmt: Option<&Stmt>) {
         let symbol = Rc::new(RefCell::new(Symbol {
             ident,
@@ -167,6 +182,7 @@ impl<'a> Resolver<'a> {
         None
     }
 
+    /// Resolve a top-level function [`Stmt`]. This should be used over calling `visit_stmt`.
     pub fn resolve_top_level(&mut self, func: &'a Stmt) {
         match func {
             Stmt::FnDeclaration { body, .. } => {
@@ -178,6 +194,7 @@ impl<'a> Resolver<'a> {
         }
     }
 
+    /// Resolve builtin variables.
     pub fn resolve_builtin_vars(&mut self, builtin_vars: &BuiltinVars) {
         for (ident, _value) in &builtin_vars.values {
             self.add_symbol(ident.clone(), None);

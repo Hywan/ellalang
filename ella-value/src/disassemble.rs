@@ -1,3 +1,5 @@
+//! [`Chunk`] disassembling support.
+
 use crate::chunk::{Chunk, OpCode};
 use crate::object::ObjKind;
 use crate::Value;
@@ -16,7 +18,7 @@ impl Chunk {
         Ok(offset + 1)
     }
 
-    /// Disassemble ldc (2 bytes) instruction.
+    /// Disassemble `ldc` (2 bytes) instruction.
     fn constant_instr(
         &self,
         f: &mut fmt::Formatter<'_>,
@@ -33,7 +35,7 @@ impl Chunk {
         Ok(offset + 2)
     }
 
-    /// Disassemble ldloc, stloc, ldupval and stupval (2 bytes) instruction.
+    /// Disassemble `ldloc`, `stloc`, `ldupval` and `stupval` (2 bytes) instruction.
     fn ld_or_st_instr(
         &self,
         f: &mut fmt::Formatter<'_>,
@@ -45,7 +47,7 @@ impl Chunk {
         Ok(offset + 2)
     }
 
-    /// Disassemble calli (2 bytes) instruction.
+    /// Disassemble `calli` (2 bytes) instruction.
     fn calli_instr(
         &self,
         f: &mut fmt::Formatter<'_>,
@@ -57,6 +59,7 @@ impl Chunk {
         Ok(offset + 2)
     }
 
+    /// Disassemble `closure` (variable operands) instruction.
     fn closure_instr(
         &self,
         f: &mut fmt::Formatter<'_>,
@@ -97,7 +100,7 @@ impl Chunk {
         Ok(offset)
     }
 
-    /// Disassembles the instruction at the `offset`.
+    /// Disassembles the instruction at the given `offset`.
     fn disassemble_instr(
         &self,
         f: &mut fmt::Formatter<'_>,
@@ -107,15 +110,13 @@ impl Chunk {
 
         let instr = self.code[offset];
 
-        // print source line number
+        // Print source line number.
         if offset > 0 && self.lines[offset] == self.lines[offset - 1] {
             write!(f, "{:>4} ", "|")?;
         } else {
             write!(f, "{:>4} ", self.lines[offset])?;
         }
 
-        // SAFETY:
-        // If not a valid OpCode, none of the branches should match and thus cause an error.
         match OpCode::from_u8(instr) {
             Some(OpCode::Ldc) => self.constant_instr(f, "ldc", offset),
             Some(OpCode::LdLoc) => self.ld_or_st_instr(f, "ldloc", offset),
