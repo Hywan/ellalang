@@ -1,8 +1,9 @@
 //! Variable resolution pass.
 
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::ops::Range;
-use std::u32;
+use std::rc::Rc;
 
 use ella_parser::ast::{Expr, Stmt};
 use ella_parser::visitor::{walk_expr, Visitor};
@@ -21,40 +22,54 @@ pub struct Symbol {
 pub struct ResolvedSymbol {
     /// The offset relative to the current function's offset (`current_func_offset`).
     pub offset: i32,
+    pub is_upvalue: bool,
 }
 
+pub type SymbolTable = HashMap<*const Stmt, Rc<RefCell<Symbol>>>;
 pub type ResolvedSymbolTable = HashMap<*const Expr, ResolvedSymbol>;
 
 /// Variable resolution pass.
 pub struct Resolver<'a> {
+    /// A [`HashMap`] mapping all declaration [`Stmt`]s to [`Symbol`]s.
+    symbol_table: SymbolTable,
     /// A [`HashMap`] mapping all [`Expr::Identifier`]s to [`ResolvedSymbol`]s.
     resolved_symbol_table: ResolvedSymbolTable,
     /// A [`Vec`] of symbols that are currently in (lexical) scope.
-    accessible_symbols: Vec<Symbol>,
+    accessible_symbols: Vec<Rc<RefCell<Symbol>>>,
     /// The current scope depth. `0` is global scope.
     current_scope_depth: u32,
     /// Every time a new function scope is created, `current_func_offset` should be set to `self.resolved_symbols.len()`.
     /// When exiting a function scope, the value should be reverted to previous value.
     current_func_offset: i32,
+    current_upvalue_count: i32,
     source: &'a Source<'a>,
 }
 
 impl<'a> Resolver<'a> {
     pub fn new(source: &'a Source) -> Self {
         Self {
-            resolved_symbol_table: HashMap::new(),
+            symbol_table: SymbolTable::new(),
+            resolved_symbol_table: ResolvedSymbolTable::new(),
             accessible_symbols: Vec::new(),
             current_scope_depth: 0,
             current_func_offset: 0,
+            current_upvalue_count: 0,
             source,
         }
     }
 
-    pub fn new_with_existing_symbols(source: &'a Source, resolved_symbols: Vec<Symbol>) -> Self {
+    pub fn new_with_existing_accessible_symbols(
+        source: &'a Source,
+        resolved_symbols: Vec<Rc<RefCell<Symbol>>>,
+    ) -> Self {
         Self {
             accessible_symbols: resolved_symbols,
             ..Self::new(source)
         }
+    }
+
+    pub fn symbol_table(&self) -> &SymbolTable {
+        &self.symbol_table
     }
 
     /// Returns a [`HashMap`] mapping all [`Expr::Identifier`] to variable offsets.
@@ -62,8 +77,8 @@ impl<'a> Resolver<'a> {
         &self.resolved_symbol_table
     }
 
-    pub fn into_resolved_symbols(self) -> Vec<Symbol> {
-        self.accessible_symbols
+    pub fn accessible_symbols(&self) -> &Vec<Rc<RefCell<Symbol>>> {
+        &self.accessible_symbols
     }
 
     fn enter_scope(&mut self) {
@@ -77,35 +92,44 @@ impl<'a> Resolver<'a> {
         self.accessible_symbols = self
             .accessible_symbols
             .iter()
-            .filter(|symbol| symbol.scope_depth <= self.current_scope_depth)
+            .filter(|symbol| symbol.borrow().scope_depth <= self.current_scope_depth)
             .cloned()
             .collect();
     }
 
     /// Adds a symbol to `self.accessible_symbols`.
-    fn add_symbol(&mut self, ident: String) {
-        let symbol = Symbol {
+    fn add_symbol(&mut self, ident: String, stmt: Option<&Stmt>) {
+        let symbol = Rc::new(RefCell::new(Symbol {
             ident,
             scope_depth: self.current_scope_depth,
             is_captured: false, // not captured by default
-        };
-        self.accessible_symbols.push(symbol);
+        }));
+        self.accessible_symbols.push(Rc::clone(&symbol));
+        if let Some(stmt) = stmt {
+            self.symbol_table.insert(stmt as *const Stmt, symbol);
+        }
     }
 
-    /// Returns the offset of a resolved variable or `0` if cannot be resolved.
+    /// Returns a `Some((usize, Rc<RefCell<Symbol>>))` or `None` if cannot be resolved.
+    /// The `usize` is the offset of the variable.
     ///
     /// # Params
     /// * `ident` - The identifier to resolve.
     /// * `span` - The span of the expression to resolve. This is used for error reporting in case the variable could not be resolved.
-    fn resolve_symbol(&mut self, ident: &str, span: Range<usize>) -> i32 {
+    fn resolve_symbol(
+        &mut self,
+        ident: &str,
+        span: Range<usize>,
+    ) -> Option<(usize, Rc<RefCell<Symbol>>)> {
         for (i, symbol) in self.accessible_symbols.iter_mut().enumerate().rev() {
-            if symbol.ident == ident {
-                if symbol.scope_depth == self.current_scope_depth {
-                    return i as i32 - self.current_func_offset;
+            if symbol.borrow().ident == ident {
+                if symbol.borrow().scope_depth == self.current_scope_depth {
+                    return Some((i - self.current_func_offset as usize, symbol.clone()));
                 } else {
                     // capture outer variable
-                    symbol.is_captured = true;
-                    return i as i32;
+                    symbol.borrow_mut().is_captured = true;
+                    self.current_upvalue_count += 1;
+                    return Some(((self.current_upvalue_count - 1) as usize, symbol.clone()));
                 }
             }
         }
@@ -113,7 +137,7 @@ impl<'a> Resolver<'a> {
             format!("Cannot resolve symbol {}", ident),
             span,
         ));
-        -1
+        None
     }
 
     pub fn resolve_top_level(&mut self, func: &'a Stmt) {
@@ -129,7 +153,7 @@ impl<'a> Resolver<'a> {
 
     pub fn resolve_builtin_vars(&mut self, builtin_vars: &BuiltinVars) {
         for (ident, _value) in &builtin_vars.values {
-            self.add_symbol(ident.clone());
+            self.add_symbol(ident.clone(), None);
         }
     }
 }
@@ -140,18 +164,32 @@ impl<'a> Visitor<'a> for Resolver<'a> {
 
         match expr {
             Expr::Identifier(ident) => {
-                let offset = self.resolve_symbol(ident, 0..0);
-                self.resolved_symbol_table
-                    .insert(expr as *const Expr, ResolvedSymbol { offset });
+                let symbol = self.resolve_symbol(ident, 0..0);
+                if let Some((offset, symbol)) = symbol {
+                    self.resolved_symbol_table.insert(
+                        expr as *const Expr,
+                        ResolvedSymbol {
+                            offset: offset as i32,
+                            is_upvalue: symbol.borrow().is_captured,
+                        },
+                    );
+                }
             }
             Expr::FnCall { ident, args } => {
                 for expr in args {
                     self.visit_expr(expr);
                 }
 
-                let offset = self.resolve_symbol(ident, 0..0);
-                self.resolved_symbol_table
-                    .insert(expr as *const Expr, ResolvedSymbol { offset });
+                let symbol = self.resolve_symbol(ident, 0..0);
+                if let Some((offset, symbol)) = symbol {
+                    self.resolved_symbol_table.insert(
+                        expr as *const Expr,
+                        ResolvedSymbol {
+                            offset: offset as i32,
+                            is_upvalue: symbol.borrow().is_captured,
+                        },
+                    );
+                }
             }
             _ => {}
         }
@@ -167,7 +205,7 @@ impl<'a> Visitor<'a> for Resolver<'a> {
                 initializer,
             } => {
                 self.visit_expr(initializer);
-                self.add_symbol(ident.clone());
+                self.add_symbol(ident.clone(), Some(stmt));
             }
             Stmt::FnDeclaration {
                 meta: _,
@@ -175,15 +213,17 @@ impl<'a> Visitor<'a> for Resolver<'a> {
                 params,
                 body,
             } => {
-                self.add_symbol(ident.clone()); // Add symbol first to allow recursion.
+                self.add_symbol(ident.clone(), Some(stmt)); // Add symbol first to allow for recursion.
 
                 let old_func_offset = self.current_func_offset;
+                let old_upvalue_count = self.current_upvalue_count;
+
                 self.current_func_offset = self.accessible_symbols.len() as i32;
 
                 self.enter_scope();
                 // add arguments
                 for param in params {
-                    self.add_symbol(param.clone());
+                    self.add_symbol(param.clone(), Some(stmt));
                 }
 
                 for stmt in body {
@@ -192,6 +232,7 @@ impl<'a> Visitor<'a> for Resolver<'a> {
                 self.exit_scope();
 
                 self.current_func_offset = old_func_offset;
+                self.current_upvalue_count = old_upvalue_count;
             }
             Stmt::Block(body) => {
                 self.enter_scope();

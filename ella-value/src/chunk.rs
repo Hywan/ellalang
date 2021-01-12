@@ -1,7 +1,7 @@
 use crate::{Value, ValueArray};
 use enum_primitive_derive::Primitive;
 
-/// Represents an opcode. Should only takes up a byte (`u8`).
+/// Represents an opcode. Should only takes up 1 byte (`u8`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Primitive)]
 #[repr(u8)]
 pub enum OpCode {

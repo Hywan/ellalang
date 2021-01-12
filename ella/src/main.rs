@@ -22,16 +22,15 @@ fn repl() {
         builtin_vars
     };
 
-    let mut resolved_symbols = {
-        let dummy_source = "".into();
-        let mut resolver = Resolver::new(&dummy_source);
-        resolver.resolve_builtin_vars(&builtin_vars);
-        resolver.into_resolved_symbols()
-    };
+    let dummy_source = "".into();
+    let mut resolver = Resolver::new(&dummy_source);
+    resolver.resolve_builtin_vars(&builtin_vars);
+    let mut symbol_table = resolver.symbol_table().clone();
+    let mut accessible_symbols = resolver.accessible_symbols().clone();
 
     let mut vm = Vm::new(&builtin_vars);
     let mut resolved_symbol_table = &ResolvedSymbolTable::new();
-    let mut codegen = Codegen::new("<global>".to_string(), resolved_symbol_table);
+    let mut codegen = Codegen::new("<global>".to_string(), &symbol_table, resolved_symbol_table);
     codegen.codegen_builtin_vars(&builtin_vars);
     vm.interpret(codegen.into_inner_chunk()); // load built in functions into memory
 
@@ -45,15 +44,15 @@ fn repl() {
         let source = input.as_str().into();
         let mut parser = Parser::new(&source);
         let ast = parser.parse_repl_input();
-        // eprintln!("{:#?}", ast);
 
-        let mut resolver = Resolver::new_with_existing_symbols(&source, resolved_symbols.clone());
+        let mut resolver = Resolver::new_with_existing_accessible_symbols(&source, accessible_symbols.clone());
         resolver.resolve_top_level(&ast);
+        symbol_table = resolver.symbol_table().clone();
         resolved_symbol_table = resolver.resolved_symbol_table();
 
         eprintln!("{}", source.errors);
         if source.has_no_errors() {
-            let mut codegen = Codegen::new("<global>".to_string(), resolved_symbol_table);
+            let mut codegen = Codegen::new("<global>".to_string(), &symbol_table, resolved_symbol_table);
 
             codegen.codegen_function(&ast);
 
@@ -64,7 +63,7 @@ fn repl() {
             match &interpret_result {
                 InterpretResult::Ok => {
                     // Success, update  resolved_symbols with new symbols.
-                    resolved_symbols = resolver.into_resolved_symbols();
+                    accessible_symbols = resolver.accessible_symbols().clone();
                 }
                 InterpretResult::RuntimeError { .. } => {
                     eprintln!("{:?}", interpret_result);
@@ -87,16 +86,15 @@ fn interpret_file_contents(source: &str) {
         builtin_vars
     };
 
-    let resolved_symbols = {
-        let dummy_source = "".into();
-        let mut resolver = Resolver::new(&dummy_source);
-        resolver.resolve_builtin_vars(&builtin_vars);
-        resolver.into_resolved_symbols()
-    };
+    let dummy_source = "".into();
+    let mut resolver = Resolver::new(&dummy_source);
+    resolver.resolve_builtin_vars(&builtin_vars);
+    let symbol_table = resolver.symbol_table();
+    let accessible_symbols = resolver.accessible_symbols();
 
     let mut vm = Vm::new(&builtin_vars);
     let mut resolved_symbol_table = &ResolvedSymbolTable::new();
-    let mut codegen = Codegen::new("<global>".to_string(), resolved_symbol_table);
+    let mut codegen = Codegen::new("<global>".to_string(), symbol_table, resolved_symbol_table);
     codegen.codegen_builtin_vars(&builtin_vars);
     vm.interpret(codegen.into_inner_chunk()); // load built in functions into memory
 
@@ -104,14 +102,14 @@ fn interpret_file_contents(source: &str) {
     let mut parser = Parser::new(&source);
     let ast = parser.parse_program();
 
-    let mut resolver = Resolver::new_with_existing_symbols(&source, resolved_symbols.clone());
+    let mut resolver = Resolver::new_with_existing_accessible_symbols(&source, accessible_symbols.clone());
     resolver.resolve_top_level(&ast);
     resolved_symbol_table = resolver.resolved_symbol_table();
 
     if !source.has_no_errors() {
         eprintln!("{}", source.errors);
     } else {
-        let mut codegen = Codegen::new("<global>".to_string(), resolved_symbol_table);
+        let mut codegen = Codegen::new("<global>".to_string(), symbol_table, resolved_symbol_table);
 
         codegen.codegen_function(&ast);
 

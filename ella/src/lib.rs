@@ -20,16 +20,15 @@ pub fn interpret(source: &str) {
         builtin_vars
     };
 
-    let resolved_symbols = {
-        let dummy_source = "".into();
-        let mut resolver = Resolver::new(&dummy_source);
-        resolver.resolve_builtin_vars(&builtin_vars);
-        resolver.into_resolved_symbols()
-    };
+    let dummy_source = "".into();
+    let mut resolver = Resolver::new(&dummy_source);
+    resolver.resolve_builtin_vars(&builtin_vars);
+    let mut symbol_table = resolver.symbol_table();
+    let accessible_symbols = resolver.accessible_symbols();
 
     let mut vm = Vm::new(&builtin_vars);
     let mut resolved_symbol_table = &HashMap::new();
-    let mut codegen = Codegen::new("<global>".to_string(), &resolved_symbol_table);
+    let mut codegen = Codegen::new("<global>".to_string(), symbol_table, &resolved_symbol_table);
     codegen.codegen_builtin_vars(&builtin_vars);
     vm.interpret(codegen.into_inner_chunk()); // load built in functions into memory
 
@@ -37,13 +36,14 @@ pub fn interpret(source: &str) {
     let mut parser = Parser::new(&source);
     let ast = parser.parse_program();
 
-    let mut resolver = Resolver::new_with_existing_symbols(&source, resolved_symbols.clone());
+    let mut resolver = Resolver::new_with_existing_accessible_symbols(&source, accessible_symbols.clone());
     resolver.resolve_top_level(&ast);
+    symbol_table = resolver.symbol_table();
     resolved_symbol_table = resolver.resolved_symbol_table();
 
     assert!(source.has_no_errors());
 
-    let mut codegen = Codegen::new("<global>".to_string(), resolved_symbol_table);
+    let mut codegen = Codegen::new("<global>".to_string(), symbol_table, resolved_symbol_table);
 
     codegen.codegen_function(&ast);
 

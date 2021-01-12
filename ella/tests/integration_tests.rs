@@ -94,7 +94,7 @@ mod functions {
     }
 
     #[test]
-    #[ignore = "not yet implemented"]
+    #[ignore]
     fn closures() {
         interpret(
             r#"

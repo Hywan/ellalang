@@ -18,9 +18,8 @@ pub fn assert(args: &mut [Value]) -> Value {
     let arg = &args[0];
 
     match arg {
-        Value::Number(_) => {}
         Value::Bool(val) => assert!(*val),
-        Value::Object(_) => {}
+        _ => {}
     }
     Value::Bool(true)
 }

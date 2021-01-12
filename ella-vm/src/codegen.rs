@@ -5,10 +5,11 @@ use ella_parser::{
     lexer::Token,
     visitor::{walk_expr, Visitor},
 };
-use ella_passes::resolve::ResolvedSymbolTable;
+use ella_passes::resolve::{ResolvedSymbolTable, Symbol, SymbolTable};
 use ella_value::chunk::{Chunk, OpCode};
 use ella_value::object::{Function, Obj, ObjKind};
 use ella_value::{BuiltinVars, Value};
+use std::cell::RefCell;
 use std::{collections::HashMap, rc::Rc};
 
 const DUMP_CHUNK: bool = true;
@@ -17,19 +18,25 @@ const DUMP_CHUNK: bool = true;
 pub struct Codegen<'a> {
     chunk: Chunk,
     constant_strings: HashMap<String, Rc<Obj>>,
+    symbol_table: &'a SymbolTable,
     resolved_symbol_table: &'a ResolvedSymbolTable,
     /// Every time a new scope is created, a new value is pushed onto the stack.
     /// This is to keep track of how many `pop` instructions to emit when exiting the scope.
-    local_var_counts: Vec<u32>,
+    scope_stack: Vec<Vec<Rc<RefCell<Symbol>>>>,
 }
 
 impl<'a> Codegen<'a> {
-    pub fn new(name: String, resolved_symbol_table: &'a ResolvedSymbolTable) -> Self {
+    pub fn new(
+        name: String,
+        symbol_table: &'a SymbolTable,
+        resolved_symbol_table: &'a ResolvedSymbolTable,
+    ) -> Self {
         Self {
             chunk: Chunk::new(name),
             constant_strings: HashMap::new(),
+            symbol_table,
             resolved_symbol_table,
-            local_var_counts: vec![0],
+            scope_stack: vec![Vec::new()],
         }
     }
 
@@ -68,21 +75,25 @@ impl<'a> Codegen<'a> {
     }
 
     fn enter_scope(&mut self) {
-        self.local_var_counts.push(0);
+        self.scope_stack.push(Vec::new());
     }
 
-    fn increment_var_count(&mut self) {
-        *self.local_var_counts.last_mut().unwrap() += 1;
+    fn add_symbol(&mut self, stmt: &Stmt) {
+        let stmt = &(stmt as *const Stmt);
+        let symbol = self.symbol_table.get(stmt).unwrap();
+        self.scope_stack
+            .last_mut()
+            .unwrap()
+            .push(Rc::clone(&symbol));
     }
-
-    // fn test(&mut self, stmt: &Stmt) {
-    //     todo!();
-    // }
 
     fn exit_scope(&mut self) {
-        let var_count = self.local_var_counts.pop().unwrap();
-        for _i in 0..var_count {
-            self.chunk.write_chunk(OpCode::Pop, 0);
+        let scope = self.scope_stack.pop().unwrap();
+        for symbol in scope {
+            match symbol.borrow().is_captured {
+                true => self.chunk.write_chunk(OpCode::CloseUpVal, 0),
+                false => self.chunk.write_chunk(OpCode::Pop, 0),
+            }
         }
     }
 }
@@ -119,8 +130,16 @@ impl<'a> Visitor<'a> for Codegen<'a> {
                     .resolved_symbol_table
                     .get(&(expr as *const Expr))
                     .unwrap();
-                self.chunk.write_chunk(OpCode::LdLoc, 0);
-                self.chunk.write_chunk(resolved_symbol.offset as u8, 0);
+                match resolved_symbol.is_upvalue {
+                    true => {
+                        self.chunk.write_chunk(OpCode::LdUpVal, 0);
+                        self.chunk.write_chunk(resolved_symbol.offset as u8, 0);
+                    }
+                    false => {
+                        self.chunk.write_chunk(OpCode::LdLoc, 0);
+                        self.chunk.write_chunk(resolved_symbol.offset as u8, 0);
+                    }
+                }
             }
             Expr::FnCall { ident: _, args } => {
                 let arity = args.len() as u8;
@@ -184,8 +203,7 @@ impl<'a> Visitor<'a> for Codegen<'a> {
                 initializer,
             } => {
                 self.visit_expr(initializer); // Push value of expression onto top of stack.
-                self.increment_var_count();
-                // self.test(&stmt);
+                self.add_symbol(stmt);
             }
             Stmt::FnDeclaration {
                 meta: _,
@@ -199,9 +217,10 @@ impl<'a> Visitor<'a> for Codegen<'a> {
 
                 // Create a new `Codegen` instance, codegen the function, and add the chunk to the `ObjKind::Fn`.
                 let func_chunk = {
-                    let mut cg = Codegen::new(ident.clone(), self.resolved_symbol_table);
+                    let mut cg =
+                        Codegen::new(ident.clone(), self.symbol_table, self.resolved_symbol_table);
                     cg.codegen_function(stmt);
-                    cg.into_inner_chunk()
+                    cg.chunk
                 };
 
                 let func = Rc::new(Obj {
