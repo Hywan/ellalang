@@ -10,6 +10,26 @@ use ella_parser::visitor::{walk_expr, Visitor};
 use ella_source::{Source, SyntaxError};
 use ella_value::BuiltinVars;
 
+/// Result of running [`Resolver`] pass.
+/// See [`Resolver::resolve_result`].
+#[derive(Debug, Clone, Copy)]
+pub struct ResolveResult<'a> {
+    symbol_table: &'a SymbolTable,
+    resolved_symbol_table: &'a ResolvedSymbolTable,
+}
+
+impl<'a> ResolveResult<'a> {
+    /// Lookup a [`Stmt`] (by reference) to get variable resolution metadata.
+    pub fn lookup_declaration(&self, stmt: &Stmt) -> Option<&'a Rc<RefCell<Symbol>>> {
+        self.symbol_table.get(&(stmt as *const Stmt))
+    }
+
+    /// Lookup a [`Expr`] (by reference) to get variable resolution metadata.
+    pub fn lookup_identifier(&self, expr: &Expr) -> Option<&'a ResolvedSymbol> {
+        self.resolved_symbol_table.get(&(expr as *const Expr))
+    }
+}
+
 /// Represents a symbol (created using `let` or `fn` declaration statement).
 #[derive(Debug, Clone, PartialEq)]
 pub struct Symbol {
@@ -84,14 +104,12 @@ impl<'a> Resolver<'a> {
         }
     }
 
-    /// Returns the generated `SymbolTable`.
-    pub fn symbol_table(&self) -> &SymbolTable {
-        &self.symbol_table
-    }
-
-    /// Returns a [`HashMap`] mapping all [`Expr::Identifier`] to variable offsets.
-    pub fn resolved_symbol_table(&self) -> &ResolvedSymbolTable {
-        &self.resolved_symbol_table
+    /// Creates a [`ResolveResult`].
+    pub fn resolve_result(&self) -> ResolveResult {
+        ResolveResult {
+            symbol_table: &self.symbol_table,
+            resolved_symbol_table: &self.resolved_symbol_table,
+        }
     }
 
     /// Returns the list of accessible symbols.

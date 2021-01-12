@@ -5,7 +5,7 @@ use ella_parser::{
     lexer::Token,
     visitor::Visitor,
 };
-use ella_passes::resolve::{ResolvedSymbolTable, Symbol, SymbolTable};
+use ella_passes::resolve::{ResolveResult, Symbol};
 use ella_value::chunk::{Chunk, OpCode};
 use ella_value::object::{Function, Obj, ObjKind};
 use ella_value::{BuiltinVars, Value};
@@ -18,24 +18,18 @@ const DUMP_CHUNK: bool = true;
 pub struct Codegen<'a> {
     chunk: Chunk,
     constant_strings: HashMap<String, Rc<Obj>>,
-    symbol_table: &'a SymbolTable,
-    resolved_symbol_table: &'a ResolvedSymbolTable,
+    resolve_result: ResolveResult<'a>,
     /// Every time a new scope is created, a new value is pushed onto the stack.
     /// This is to keep track of how many `pop` instructions to emit when exiting the scope.
     scope_stack: Vec<Vec<Rc<RefCell<Symbol>>>>,
 }
 
 impl<'a> Codegen<'a> {
-    pub fn new(
-        name: String,
-        symbol_table: &'a SymbolTable,
-        resolved_symbol_table: &'a ResolvedSymbolTable,
-    ) -> Self {
+    pub fn new(name: String, resolve_result: ResolveResult<'a>) -> Self {
         Self {
             chunk: Chunk::new(name),
             constant_strings: HashMap::new(),
-            symbol_table,
-            resolved_symbol_table,
+            resolve_result,
             scope_stack: vec![Vec::new()],
         }
     }
@@ -79,12 +73,8 @@ impl<'a> Codegen<'a> {
     }
 
     fn add_symbol(&mut self, stmt: &Stmt) {
-        let stmt = &(stmt as *const Stmt);
-        let symbol = self.symbol_table.get(stmt).unwrap();
-        self.scope_stack
-            .last_mut()
-            .unwrap()
-            .push(Rc::clone(&symbol));
+        let symbol = self.resolve_result.lookup_declaration(stmt).unwrap();
+        self.scope_stack.last_mut().unwrap().push(Rc::clone(symbol));
     }
 
     fn exit_scope(&mut self) {
@@ -126,10 +116,7 @@ impl<'a> Visitor<'a> for Codegen<'a> {
                 self.chunk.write_chunk(constant, 0);
             }
             Expr::Identifier(_) => {
-                let resolved_symbol = *self
-                    .resolved_symbol_table
-                    .get(&(expr as *const Expr))
-                    .unwrap();
+                let resolved_symbol = *self.resolve_result.lookup_identifier(expr).unwrap();
                 match resolved_symbol.is_upvalue {
                     true => {
                         self.chunk.write_chunk(OpCode::LdUpVal, 0);
@@ -159,10 +146,8 @@ impl<'a> Visitor<'a> for Codegen<'a> {
                     Token::Asterisk => self.chunk.write_chunk(OpCode::Mul, 0),
                     Token::Slash => self.chunk.write_chunk(OpCode::Div, 0),
                     Token::Equals => {
-                        let resolved_symbol = *self
-                            .resolved_symbol_table
-                            .get(&(lhs.as_ref() as *const Expr))
-                            .unwrap();
+                        let resolved_symbol =
+                            *self.resolve_result.lookup_identifier(lhs.as_ref()).unwrap();
                         match resolved_symbol.is_upvalue {
                             true => {
                                 self.chunk.write_chunk(OpCode::StUpVal, 0);
@@ -228,13 +213,12 @@ impl<'a> Visitor<'a> for Codegen<'a> {
 
                 // Create a new `Codegen` instance, codegen the function, and add the chunk to the `ObjKind::Fn`.
                 let fn_chunk = {
-                    let mut cg =
-                        Codegen::new(ident.clone(), self.symbol_table, self.resolved_symbol_table);
+                    let mut cg = Codegen::new(ident.clone(), self.resolve_result);
                     cg.codegen_function(stmt);
                     cg.chunk
                 };
 
-                let symbol = self.symbol_table.get(&(stmt as *const Stmt)).unwrap();
+                let symbol = self.resolve_result.lookup_declaration(stmt).unwrap();
 
                 let func = Rc::new(Obj {
                     kind: ObjKind::Fn(Function {

@@ -2,8 +2,6 @@ pub mod builtin_functions;
 
 /// For testing purposes only.
 pub fn interpret(source: &str) {
-    use std::collections::HashMap;
-
     use builtin_functions::default_builtin_vars;
 
     use ella_parser::parser::Parser;
@@ -16,12 +14,11 @@ pub fn interpret(source: &str) {
     let dummy_source = "".into();
     let mut resolver = Resolver::new(&dummy_source);
     resolver.resolve_builtin_vars(&builtin_vars);
-    let mut symbol_table = resolver.symbol_table();
+    let mut resolve_result = resolver.resolve_result();
     let accessible_symbols = resolver.accessible_symbols();
 
     let mut vm = Vm::new(&builtin_vars);
-    let mut resolved_symbol_table = &HashMap::new();
-    let mut codegen = Codegen::new("<global>".to_string(), symbol_table, &resolved_symbol_table);
+    let mut codegen = Codegen::new("<global>".to_string(), resolve_result);
     codegen.codegen_builtin_vars(&builtin_vars);
     vm.interpret(codegen.into_inner_chunk()); // load built in functions into memory
 
@@ -32,13 +29,12 @@ pub fn interpret(source: &str) {
     let mut resolver =
         Resolver::new_with_existing_accessible_symbols(&source, accessible_symbols.clone());
     resolver.resolve_top_level(&ast);
-    symbol_table = resolver.symbol_table();
-    resolved_symbol_table = resolver.resolved_symbol_table();
+    resolve_result = resolver.resolve_result();
 
     eprintln!("{}", source.errors);
     assert!(source.has_no_errors());
 
-    let mut codegen = Codegen::new("<global>".to_string(), symbol_table, resolved_symbol_table);
+    let mut codegen = Codegen::new("<global>".to_string(), resolve_result);
 
     codegen.codegen_function(&ast);
 

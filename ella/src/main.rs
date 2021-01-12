@@ -1,6 +1,6 @@
 use ella::builtin_functions::default_builtin_vars;
 use ella_parser::parser::Parser;
-use ella_passes::resolve::{ResolvedSymbolTable, Resolver};
+use ella_passes::resolve::Resolver;
 use ella_vm::vm::InterpretResult;
 use ella_vm::{codegen::Codegen, vm::Vm};
 
@@ -17,12 +17,11 @@ fn repl() {
     let dummy_source = "".into();
     let mut resolver = Resolver::new(&dummy_source);
     resolver.resolve_builtin_vars(&builtin_vars);
-    let mut symbol_table = resolver.symbol_table().clone();
+    let mut resolve_result = resolver.resolve_result();
     let mut accessible_symbols = resolver.accessible_symbols().clone();
 
     let mut vm = Vm::new(&builtin_vars);
-    let mut resolved_symbol_table = &ResolvedSymbolTable::new();
-    let mut codegen = Codegen::new("<global>".to_string(), &symbol_table, resolved_symbol_table);
+    let mut codegen = Codegen::new("<global>".to_string(), resolve_result);
     codegen.codegen_builtin_vars(&builtin_vars);
     vm.interpret(codegen.into_inner_chunk()); // load built in functions into memory
 
@@ -40,13 +39,11 @@ fn repl() {
         let mut resolver =
             Resolver::new_with_existing_accessible_symbols(&source, accessible_symbols.clone());
         resolver.resolve_top_level(&ast);
-        symbol_table = resolver.symbol_table().clone();
-        resolved_symbol_table = resolver.resolved_symbol_table();
+        resolve_result = resolver.resolve_result();
 
         eprintln!("{}", source.errors);
         if source.has_no_errors() {
-            let mut codegen =
-                Codegen::new("<global>".to_string(), &symbol_table, resolved_symbol_table);
+            let mut codegen = Codegen::new("<global>".to_string(), resolve_result);
 
             codegen.codegen_function(&ast);
 
@@ -75,12 +72,11 @@ fn interpret_file_contents(source: &str) {
     let dummy_source = "".into();
     let mut resolver = Resolver::new(&dummy_source);
     resolver.resolve_builtin_vars(&builtin_vars);
-    let mut symbol_table = resolver.symbol_table();
+    let mut resolve_result = resolver.resolve_result();
     let accessible_symbols = resolver.accessible_symbols();
 
     let mut vm = Vm::new(&builtin_vars);
-    let mut resolved_symbol_table = &ResolvedSymbolTable::new();
-    let mut codegen = Codegen::new("<global>".to_string(), symbol_table, resolved_symbol_table);
+    let mut codegen = Codegen::new("<global>".to_string(), resolve_result);
     codegen.codegen_builtin_vars(&builtin_vars);
     vm.interpret(codegen.into_inner_chunk()); // load built in functions into memory
 
@@ -91,13 +87,12 @@ fn interpret_file_contents(source: &str) {
     let mut resolver =
         Resolver::new_with_existing_accessible_symbols(&source, accessible_symbols.clone());
     resolver.resolve_top_level(&ast);
-    symbol_table = resolver.symbol_table();
-    resolved_symbol_table = resolver.resolved_symbol_table();
+    resolve_result = resolver.resolve_result();
 
     if !source.has_no_errors() {
         eprintln!("{}", source.errors);
     } else {
-        let mut codegen = Codegen::new("<global>".to_string(), symbol_table, resolved_symbol_table);
+        let mut codegen = Codegen::new("<global>".to_string(), resolve_result);
 
         codegen.codegen_function(&ast);
 
