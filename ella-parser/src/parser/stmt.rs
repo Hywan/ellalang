@@ -1,5 +1,3 @@
-use crate::ast::DeclarationMeta;
-
 use super::*;
 
 impl<'a> Parser<'a> {
@@ -61,7 +59,6 @@ impl<'a> Parser<'a> {
         let initializer = self.parse_expr();
         self.expect(Token::Semi);
         Stmt::LetDeclaration {
-            meta: DeclarationMeta::new(),
             ident,
             initializer,
         }
@@ -114,7 +111,6 @@ impl<'a> Parser<'a> {
         }
 
         Stmt::FnDeclaration {
-            meta: DeclarationMeta::new(),
             body,
             ident,
             params,

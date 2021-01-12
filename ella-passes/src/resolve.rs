@@ -226,16 +226,11 @@ impl<'a> Visitor<'a> for Resolver<'a> {
         // Do not use default walking logic.
 
         match stmt {
-            Stmt::LetDeclaration {
-                meta: _,
-                ident,
-                initializer,
-            } => {
+            Stmt::LetDeclaration { ident, initializer } => {
                 self.visit_expr(initializer);
                 self.add_symbol(ident.clone(), Some(stmt));
             }
             Stmt::FnDeclaration {
-                meta: _,
                 ident,
                 params,
                 body,

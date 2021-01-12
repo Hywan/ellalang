@@ -214,7 +214,6 @@ impl<'a> Visitor<'a> for Codegen<'a> {
 
         match stmt {
             Stmt::LetDeclaration {
-                meta: _,
                 ident: _,
                 initializer,
             } => {
@@ -222,7 +221,6 @@ impl<'a> Visitor<'a> for Codegen<'a> {
                 self.add_symbol(stmt);
             }
             Stmt::FnDeclaration {
-                meta: _,
                 ident,
                 params,
                 body: _, // Body is codegen in a new `Codegen` instance.

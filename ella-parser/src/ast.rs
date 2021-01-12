@@ -25,37 +25,13 @@ pub enum Expr {
     Error,
 }
 
-/// Metadata related to variable declarations.
-#[derive(Debug, Clone, PartialEq)]
-pub struct DeclarationMeta {
-    /// *Default:* `None`
-    /// Modified in variable resolution pass.
-    pub is_captured_in_closure: Option<bool>,
-}
-
-impl DeclarationMeta {
-    pub fn new() -> Self {
-        Self {
-            is_captured_in_closure: Some(false),
-        }
-    }
-}
-
-impl Default for DeclarationMeta {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum Stmt {
     LetDeclaration {
-        meta: DeclarationMeta,
         ident: String,
         initializer: Expr,
     },
     FnDeclaration {
-        meta: DeclarationMeta,
         ident: String,
         params: Vec<String>,
         body: Vec<Stmt>,

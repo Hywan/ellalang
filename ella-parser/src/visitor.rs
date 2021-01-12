@@ -43,12 +43,10 @@ pub fn walk_stmt<'ast>(visitor: &mut impl Visitor<'ast>, stmt: &'ast Stmt) {
 
     match stmt {
         Stmt::LetDeclaration {
-            meta: _,
             ident: _,
             initializer,
         } => visitor.visit_expr(initializer),
         Stmt::FnDeclaration {
-            meta: _,
             ident: _,
             params: _,
             body,

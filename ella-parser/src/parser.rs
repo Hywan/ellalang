@@ -1,4 +1,4 @@
-use crate::ast::{DeclarationMeta, Expr, Stmt};
+use crate::ast::{Expr, Stmt};
 use crate::lexer::Token;
 use ella_source::{Source, SyntaxError};
 use logos::{Lexer, Logos};
@@ -40,7 +40,6 @@ impl<'a> Parser<'a> {
         }
 
         Stmt::FnDeclaration {
-            meta: DeclarationMeta::new(),
             body,
             ident: "<global>".to_string(),
             params: Vec::new(),
@@ -66,7 +65,6 @@ impl<'a> Parser<'a> {
         }
 
         Stmt::FnDeclaration {
-            meta: DeclarationMeta::new(),
             body,
             ident: "<global>".to_string(),
             params: Vec::new(),
