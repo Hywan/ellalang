@@ -34,7 +34,7 @@ impl<'a> Parser<'a> {
         let mut body = Vec::new();
         loop {
             body.push(self.parse_declaration());
-            if matches!(self.current_token, Token::Eof | Token::Error) {
+            if self.current_token == Token::Eof {
                 break;
             }
         }

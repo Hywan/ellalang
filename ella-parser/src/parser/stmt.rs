@@ -74,6 +74,7 @@ impl<'a> Parser<'a> {
             self.next();
             ident
         } else {
+            self.next();
             self.unexpected();
             return Stmt::Error;
         };

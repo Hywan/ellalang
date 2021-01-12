@@ -31,6 +31,7 @@ impl<'a> Parser<'a> {
                 }
             }
             _ => {
+                self.next();
                 self.unexpected();
                 Expr::Error
             }
