@@ -136,11 +136,27 @@ impl<'a> Resolver<'a> {
                 } else {
                     // capture outer variable
                     symbol.borrow_mut().is_captured = true;
-                    self.function_upvalues.last_mut().unwrap().push(ResolvedUpValue {
-                        is_local: true, // TODO
-                        index: i as i32,
-                    });
-                    return Some(((self.function_upvalues.last().unwrap().len() - 1) as usize, symbol.clone()));
+
+                    // thread upvalue in enclosing functions
+                    let mut prev_upvalue_index = 0;
+                    for scope_depth in symbol.borrow().scope_depth + 1..=self.current_scope_depth {
+                        let is_local = scope_depth == symbol.borrow().scope_depth + 1;
+                        self.function_upvalues[scope_depth as usize].push(ResolvedUpValue {
+                            is_local,
+                            index: if is_local {
+                                i as i32
+                            } else {
+                                prev_upvalue_index as i32
+                            },
+                        });
+
+                        prev_upvalue_index = self.function_upvalues[scope_depth as usize].len() - 1;
+                    }
+
+                    return Some((
+                        (self.function_upvalues.last().unwrap().len() - 1) as usize,
+                        symbol.clone(),
+                    ));
                 }
             }
         }

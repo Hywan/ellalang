@@ -335,19 +335,22 @@ impl<'a> Vm<'a> {
                     };
 
                     for _i in 0..upvalues_count {
-                        let _is_local = read_byte!();
+                        let is_local = read_byte!() != 0;
                         let upvalue_index = read_byte!();
 
-                        let upvalue = match self
-                            .find_open_upvalue_with_index(upvalue_index as usize)
-                        {
-                            Some(upvalue) => upvalue,
-                            None => {
-                                let upvalue =
-                                    Rc::new(RefCell::new(UpValue::Open(upvalue_index as usize)));
-                                self.upvalues.push(upvalue.clone());
-                                upvalue
+                        let upvalue = if is_local {
+                            match self.find_open_upvalue_with_index(upvalue_index as usize) {
+                                Some(upvalue) => upvalue,
+                                None => {
+                                    let upvalue = Rc::new(RefCell::new(UpValue::Open(
+                                        upvalue_index as usize,
+                                    )));
+                                    self.upvalues.push(upvalue.clone());
+                                    upvalue
+                                }
                             }
+                        } else {
+                            frame!().closure.upvalues[upvalue_index as usize].clone()
                         };
 
                         closure.upvalues.push(upvalue);

@@ -27,7 +27,7 @@ impl Chunk {
         let constant = self.constants[constant_index as usize].clone();
         writeln!(
             f,
-            "{:<5} {:<3} (value = {})",
+            "{:<10} {:<3} (value = {})",
             name, constant_index, constant
         )?;
         Ok(offset + 2)
@@ -41,7 +41,7 @@ impl Chunk {
         offset: usize,
     ) -> Result<usize, fmt::Error> {
         let var_offset = self.code[offset + 1];
-        writeln!(f, "{:<5} {}", name, var_offset)?;
+        writeln!(f, "{:<10} {}", name, var_offset)?;
         Ok(offset + 2)
     }
 
@@ -53,7 +53,7 @@ impl Chunk {
         offset: usize,
     ) -> Result<usize, fmt::Error> {
         let arity = self.code[offset + 1];
-        writeln!(f, "{:<5} {}", name, arity)?;
+        writeln!(f, "{:<10} {}", name, arity)?;
         Ok(offset + 2)
     }
 
@@ -67,7 +67,7 @@ impl Chunk {
         let constant = self.constants[constant_index as usize].clone();
         writeln!(
             f,
-            "{:<5} {:<3} (value = {})",
+            "{:<10} {:<3} (value = {})",
             name, constant_index, constant
         )?;
         offset += 2;
@@ -79,7 +79,7 @@ impl Chunk {
                     let index = self.code[offset + 1];
                     writeln!(
                         f,
-                        "{:04} {:>4}  {:>7}{:>5}",
+                        "{:04} {:>4} `--{:<7}{:>2}",
                         offset,
                         "|",
                         if is_local != 0 { "local" } else { "upvalue" },

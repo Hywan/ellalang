@@ -175,6 +175,23 @@ mod functions {
         }
 
         #[test]
-        fn nested_upvalues() {}
+        fn nested_upvalues() {
+            interpret(r#"
+                fn outer() {
+                    let x = "value";
+
+                    fn middle() {
+                        fn inner() {
+                            return x;
+                        }
+                        return inner;
+                    }
+                    return middle;
+                }
+
+                let mid = outer();
+                let in = mid();
+                assert_eq(in(), "value");"#);
+        }
     }
 }
