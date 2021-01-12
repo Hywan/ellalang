@@ -6,7 +6,7 @@ use num_traits::FromPrimitive;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-const INSPECT_VM_STACK: bool = true;
+const INSPECT_VM_STACK: bool = false;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum InterpretResult {
@@ -66,7 +66,10 @@ impl<'a> Vm<'a> {
         let value = self.stack[index].clone();
         for upvalue in &self.upvalues {
             if upvalue.borrow().is_open_with_index(index) {
-                *upvalue.borrow_mut() = UpValue::Closed(value.clone());
+                dbg!(upvalue);
+                eprintln!("Closed upvalue with index {}", index);
+                upvalue.replace(UpValue::Closed(value.clone()));
+                dbg!(upvalue);
             }
         }
     }
@@ -140,10 +143,15 @@ impl<'a> Vm<'a> {
             () => {{
                 let return_value = self.stack.pop().unwrap();
                 let frame = self.call_stack.pop().unwrap(); // remove a `CallFrame` from the call stack.
-                                                            // cleanup local variables created in function
+
+                for i in frame.frame_pointer..self.stack.len() {
+                    self.close_upvalues(i);
+                }
+                // cleanup local variables created in function
                 while self.stack.len() > frame.frame_pointer {
                     self.stack.pop().unwrap();
                 }
+
                 self.stack.push(return_value);
             }}
         }
@@ -328,12 +336,15 @@ impl<'a> Vm<'a> {
 
                     for _i in 0..upvalues_count {
                         let _is_local = read_byte!();
-                        let upvalue_index = read_byte!() + frame!().frame_pointer as u8;
+                        let upvalue_index = read_byte!();
 
-                        let upvalue = match self.find_open_upvalue_with_index(upvalue_index as usize) {
+                        let upvalue = match self
+                            .find_open_upvalue_with_index(upvalue_index as usize)
+                        {
                             Some(upvalue) => upvalue,
                             None => {
-                                let upvalue = Rc::new(RefCell::new(UpValue::Open(upvalue_index as usize)));
+                                let upvalue =
+                                    Rc::new(RefCell::new(UpValue::Open(upvalue_index as usize)));
                                 self.upvalues.push(upvalue.clone());
                                 upvalue
                             }

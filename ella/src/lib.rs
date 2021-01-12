@@ -41,6 +41,7 @@ pub fn interpret(source: &str) {
     symbol_table = resolver.symbol_table();
     resolved_symbol_table = resolver.resolved_symbol_table();
 
+    eprintln!("{}", source.errors);
     assert!(source.has_no_errors());
 
     let mut codegen = Codegen::new("<global>".to_string(), symbol_table, resolved_symbol_table);

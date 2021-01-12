@@ -108,7 +108,22 @@ mod functions {
         }
 
         #[test]
-        fn closures() {
+        fn basic_closures() {
+            interpret(
+                r#"
+                fn closure() {
+                    let x = 1;
+                    fn inner() {
+                        return x + 1;
+                    }
+                    return inner();
+                }
+                assert_eq(closure(), 2);"#,
+            );
+        }
+
+        #[test]
+        fn close_upvalues() {
             interpret(
                 r#"
                 fn createAdder(x) {
@@ -118,20 +133,20 @@ mod functions {
                     return adder;
                 }
                 let addTwo = createAdder(2);
-                assert_eq(addTwo(1), 10);
-                assert(false);"#,
+                assert_eq(addTwo(1), 3);"#,
             );
             interpret(
                 r#"
                 fn compose(f, g) {
-                    function func(x) {
+                    fn inner(x) {
                         return f(g(x));
                     }
-                    return func;
+                    return inner;
                 }
                 fn addOne(x) { return x + 1; }
                 fn addTwo(x) { return x + 2; }
-                assert_eq(compose(addOne, addTwo)(2), 5);"#,
+                let addThree = compose(addOne, addTwo);
+                assert_eq(addThree(2), 5);"#,
             );
         }
     }
