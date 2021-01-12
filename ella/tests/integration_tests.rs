@@ -93,32 +93,46 @@ mod functions {
         );
     }
 
-    #[test]
-    #[ignore]
-    fn closures() {
-        interpret(
-            r#"
-            fn createAdder(x) {
-                fn adder(y) {
-                    return x + y;
+    mod closures {
+        use super::*;
+
+        #[test]
+        fn close_global_variable() {
+            interpret(
+                r#"
+                fn assert_test() {
+                    assert(true); // captures assert fn from global scope
                 }
-                return adder;
-            }
-            let addTwo = createAdder(2);
-            assert_eq(addTwo(1), 10);
-            assert(false);"#,
-        );
-        interpret(
-            r#"
-            fn compose(f, g) {
-                function func(x) {
-                    return f(g(x));
+                assert_test();"#,
+            );
+        }
+
+        #[test]
+        fn closures() {
+            interpret(
+                r#"
+                fn createAdder(x) {
+                    fn adder(y) {
+                        return x + y;
+                    }
+                    return adder;
                 }
-                return func;
-            }
-            fn addOne(x) { return x + 1; }
-            fn addTwo(x) { return x + 2; }
-            assert_eq(compose(addOne, addTwo)(2), 5);"#,
-        );
+                let addTwo = createAdder(2);
+                assert_eq(addTwo(1), 10);
+                assert(false);"#,
+            );
+            interpret(
+                r#"
+                fn compose(f, g) {
+                    function func(x) {
+                        return f(g(x));
+                    }
+                    return func;
+                }
+                fn addOne(x) { return x + 1; }
+                fn addTwo(x) { return x + 2; }
+                assert_eq(compose(addOne, addTwo)(2), 5);"#,
+            );
+        }
     }
 }

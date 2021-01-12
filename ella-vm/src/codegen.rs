@@ -147,8 +147,16 @@ impl<'a> Visitor<'a> for Codegen<'a> {
                     .resolved_symbol_table
                     .get(&(expr as *const Expr))
                     .unwrap();
-                self.chunk.write_chunk(OpCode::LdLoc, 0);
-                self.chunk.write_chunk(resolved_symbol.offset as u8, 0);
+                match resolved_symbol.is_upvalue {
+                    true => {
+                        self.chunk.write_chunk(OpCode::LdUpVal, 0);
+                        self.chunk.write_chunk(resolved_symbol.offset as u8, 0);
+                    }
+                    false => {
+                        self.chunk.write_chunk(OpCode::LdLoc, 0);
+                        self.chunk.write_chunk(resolved_symbol.offset as u8, 0);
+                    }
+                }
                 self.chunk.write_chunk(OpCode::Calli, 0);
                 self.chunk.write_chunk(arity, 0);
             }
@@ -216,24 +224,31 @@ impl<'a> Visitor<'a> for Codegen<'a> {
                 let arity = params.len() as u32;
 
                 // Create a new `Codegen` instance, codegen the function, and add the chunk to the `ObjKind::Fn`.
-                let func_chunk = {
+                let fn_chunk = {
                     let mut cg =
                         Codegen::new(ident.clone(), self.symbol_table, self.resolved_symbol_table);
                     cg.codegen_function(stmt);
                     cg.chunk
                 };
 
+                let symbol = self.symbol_table.get(&(stmt as *const Stmt)).unwrap();
+
                 let func = Rc::new(Obj {
                     kind: ObjKind::Fn(Function {
                         ident,
                         arity,
-                        chunk: func_chunk,
-                        upvalues_count: 0, // TODO
+                        chunk: fn_chunk,
+                        upvalues_count: symbol.borrow().upvalues.len(),
                     }),
                 });
                 let constant = self.chunk.add_constant(Value::Object(func));
                 self.chunk.write_chunk(OpCode::Closure, 0);
                 self.chunk.write_chunk(constant, 0);
+
+                for symbol in &symbol.borrow().upvalues {
+                    self.chunk.write_chunk(symbol.is_local as u8, 0);
+                    self.chunk.write_chunk(symbol.index as u8, 0);
+                }
             }
             Stmt::Block(body) => {
                 self.enter_scope();

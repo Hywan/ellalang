@@ -75,11 +75,11 @@ impl Chunk {
         if let Value::Object(obj) = constant {
             if let ObjKind::Fn(func) = &obj.kind {
                 for _i in 0..func.upvalues_count {
-                    let is_local = self.code[offset + 1];
-                    let index = self.code[offset + 2];
+                    let is_local = self.code[offset];
+                    let index = self.code[offset + 1];
                     writeln!(
                         f,
-                        "{:04}{:>4}{:>7}{:>5}",
+                        "{:04} {:>4}  {:>7}{:>5}",
                         offset - 2,
                         "|",
                         if is_local != 0 { "local" } else { "upvalue" },

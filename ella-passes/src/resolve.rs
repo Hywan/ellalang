@@ -2,6 +2,7 @@
 
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::mem;
 use std::ops::Range;
 use std::rc::Rc;
 
@@ -16,6 +17,13 @@ pub struct Symbol {
     ident: String,
     scope_depth: u32,
     pub is_captured: bool,
+    pub upvalues: Vec<ResolvedUpValue>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ResolvedUpValue {
+    pub is_local: bool,
+    pub index: i32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -41,7 +49,7 @@ pub struct Resolver<'a> {
     /// Every time a new function scope is created, `current_func_offset` should be set to `self.resolved_symbols.len()`.
     /// When exiting a function scope, the value should be reverted to previous value.
     current_func_offset: i32,
-    current_upvalue_count: i32,
+    current_upvalues: Vec<ResolvedUpValue>,
     source: &'a Source<'a>,
 }
 
@@ -53,7 +61,7 @@ impl<'a> Resolver<'a> {
             accessible_symbols: Vec::new(),
             current_scope_depth: 0,
             current_func_offset: 0,
-            current_upvalue_count: 0,
+            current_upvalues: Vec::new(),
             source,
         }
     }
@@ -103,6 +111,7 @@ impl<'a> Resolver<'a> {
             ident,
             scope_depth: self.current_scope_depth,
             is_captured: false, // not captured by default
+            upvalues: Vec::new(),
         }));
         self.accessible_symbols.push(Rc::clone(&symbol));
         if let Some(stmt) = stmt {
@@ -128,8 +137,11 @@ impl<'a> Resolver<'a> {
                 } else {
                     // capture outer variable
                     symbol.borrow_mut().is_captured = true;
-                    self.current_upvalue_count += 1;
-                    return Some(((self.current_upvalue_count - 1) as usize, symbol.clone()));
+                    self.current_upvalues.push(ResolvedUpValue {
+                        is_local: true, // TODO
+                        index: i as i32,
+                    });
+                    return Some(((self.current_upvalues.len() - 1) as usize, symbol.clone()));
                 }
             }
         }
@@ -216,7 +228,7 @@ impl<'a> Visitor<'a> for Resolver<'a> {
                 self.add_symbol(ident.clone(), Some(stmt)); // Add symbol first to allow for recursion.
 
                 let old_func_offset = self.current_func_offset;
-                let old_upvalue_count = self.current_upvalue_count;
+                let old_upvalues = mem::take(&mut self.current_upvalues);
 
                 self.current_func_offset = self.accessible_symbols.len() as i32;
 
@@ -231,8 +243,11 @@ impl<'a> Visitor<'a> for Resolver<'a> {
                 }
                 self.exit_scope();
 
+                // patch self.symbol_table with upvalues
+                self.symbol_table.get(&(stmt as *const Stmt)).unwrap().borrow_mut().upvalues = mem::take(&mut self.current_upvalues);
+
                 self.current_func_offset = old_func_offset;
-                self.current_upvalue_count = old_upvalue_count;
+                self.current_upvalues = old_upvalues;
             }
             Stmt::Block(body) => {
                 self.enter_scope();

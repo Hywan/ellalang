@@ -6,7 +6,7 @@ use num_traits::FromPrimitive;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-const INSPECT_VM_STACK: bool = false;
+const INSPECT_VM_STACK: bool = true;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum InterpretResult {
@@ -261,27 +261,9 @@ impl<'a> Vm<'a> {
                 Some(OpCode::Calli) => {
                     match self.stack.pop().unwrap() {
                         Value::Object(obj) => match &obj.kind {
-                            // ObjKind::Fn(Function {
-                            //     ident: _,
-                            //     arity,
-                            //     ref chunk,
-                            // }) => {
-                            //     let calli_arity = read_byte!();
-
-                            //     if arity != calli_arity as u32 {
-                            //         return self.runtime_error(format!(
-                            //             "Expected {} argument(s), received {}.",
-                            //             arity, calli_arity
-                            //         ));
-                            //     }
-
-                            //     // add new `CallFrame` to call stack
-                            //     self.call_stack.push(CallFrame {
-                            //         ip: 0,
-                            //         chunk: chunk.clone(),
-                            //         frame_pointer: self.stack.len() - arity as usize,
-                            //     });
-                            // }
+                            ObjKind::Fn(_) => {
+                                unreachable!("can not call ObjKind::Fn, wrap function in a ObjKind::Closure instead");
+                            }
                             ObjKind::Closure(closure) => {
                                 let calli_arity = read_byte!();
 
@@ -346,12 +328,12 @@ impl<'a> Vm<'a> {
 
                     for _i in 0..upvalues_count {
                         let _is_local = read_byte!();
-                        let index = read_byte!() + frame!().frame_pointer as u8;
+                        let upvalue_index = read_byte!() + frame!().frame_pointer as u8;
 
-                        let upvalue = match self.find_open_upvalue_with_index(index as usize) {
+                        let upvalue = match self.find_open_upvalue_with_index(upvalue_index as usize) {
                             Some(upvalue) => upvalue,
                             None => {
-                                let upvalue = Rc::new(RefCell::new(UpValue::Open(index as usize)));
+                                let upvalue = Rc::new(RefCell::new(UpValue::Open(upvalue_index as usize)));
                                 self.upvalues.push(upvalue.clone());
                                 upvalue
                             }
