@@ -66,10 +66,7 @@ impl<'a> Vm<'a> {
         let value = self.stack[index].clone();
         for upvalue in &self.upvalues {
             if upvalue.borrow().is_open_with_index(index) {
-                dbg!(upvalue);
-                eprintln!("Closed upvalue with index {}", index);
                 upvalue.replace(UpValue::Closed(value.clone()));
-                dbg!(upvalue);
             }
         }
     }
