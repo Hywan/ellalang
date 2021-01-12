@@ -1,4 +1,16 @@
-use ella_value::Value;
+use ella_value::{BuiltinVars, Value};
+
+#[allow(dead_code)] // This appears to be a bug with rustc. These functions are used in both main.rs and lib.rs
+
+pub fn default_builtin_vars() -> BuiltinVars {
+    let mut builtin_vars = BuiltinVars::new();
+    builtin_vars.add_native_fn("print", &print, 1);
+    builtin_vars.add_native_fn("println", &println, 1);
+    builtin_vars.add_native_fn("assert_eq", &assert_eq, 2);
+    builtin_vars.add_native_fn("assert", &assert, 1);
+    builtin_vars.add_native_fn("clock", &clock, 0);
+    builtin_vars
+}
 
 pub fn print(args: &mut [Value]) -> Value {
     let arg = &args[0];

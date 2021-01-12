@@ -4,21 +4,14 @@ pub mod builtin_functions;
 pub fn interpret(source: &str) {
     use std::collections::HashMap;
 
+    use builtin_functions::default_builtin_vars;
+
     use ella_parser::parser::Parser;
     use ella_passes::resolve::Resolver;
-    use ella_value::BuiltinVars;
     use ella_vm::codegen::Codegen;
     use ella_vm::vm::{InterpretResult, Vm};
 
-    let builtin_vars = {
-        let mut builtin_vars = BuiltinVars::new();
-        builtin_vars.add_native_fn("print", &builtin_functions::print, 1);
-        builtin_vars.add_native_fn("println", &builtin_functions::println, 1);
-        builtin_vars.add_native_fn("assert_eq", &builtin_functions::assert_eq, 2);
-        builtin_vars.add_native_fn("assert", &builtin_functions::assert, 1);
-        builtin_vars.add_native_fn("clock", &builtin_functions::clock, 0);
-        builtin_vars
-    };
+    let builtin_vars = default_builtin_vars();
 
     let dummy_source = "".into();
     let mut resolver = Resolver::new(&dummy_source);
@@ -36,7 +29,8 @@ pub fn interpret(source: &str) {
     let mut parser = Parser::new(&source);
     let ast = parser.parse_program();
 
-    let mut resolver = Resolver::new_with_existing_accessible_symbols(&source, accessible_symbols.clone());
+    let mut resolver =
+        Resolver::new_with_existing_accessible_symbols(&source, accessible_symbols.clone());
     resolver.resolve_top_level(&ast);
     symbol_table = resolver.symbol_table();
     resolved_symbol_table = resolver.resolved_symbol_table();

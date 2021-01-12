@@ -1,6 +1,6 @@
+use ella::builtin_functions::default_builtin_vars;
 use ella_parser::parser::Parser;
 use ella_passes::resolve::{ResolvedSymbolTable, Resolver};
-use ella_value::BuiltinVars;
 use ella_vm::vm::InterpretResult;
 use ella_vm::{codegen::Codegen, vm::Vm};
 
@@ -12,15 +12,7 @@ fn repl() {
     let mut stdout = io::stdout();
     let stdin = io::stdin();
 
-    let builtin_vars = {
-        let mut builtin_vars = BuiltinVars::new();
-        builtin_vars.add_native_fn("print", &builtin_functions::print, 1);
-        builtin_vars.add_native_fn("println", &builtin_functions::println, 1);
-        builtin_vars.add_native_fn("assert_eq", &builtin_functions::assert_eq, 2);
-        builtin_vars.add_native_fn("assert", &builtin_functions::assert, 1);
-        builtin_vars.add_native_fn("clock", &builtin_functions::clock, 0);
-        builtin_vars
-    };
+    let builtin_vars = default_builtin_vars();
 
     let dummy_source = "".into();
     let mut resolver = Resolver::new(&dummy_source);
@@ -45,14 +37,16 @@ fn repl() {
         let mut parser = Parser::new(&source);
         let ast = parser.parse_repl_input();
 
-        let mut resolver = Resolver::new_with_existing_accessible_symbols(&source, accessible_symbols.clone());
+        let mut resolver =
+            Resolver::new_with_existing_accessible_symbols(&source, accessible_symbols.clone());
         resolver.resolve_top_level(&ast);
         symbol_table = resolver.symbol_table().clone();
         resolved_symbol_table = resolver.resolved_symbol_table();
 
         eprintln!("{}", source.errors);
         if source.has_no_errors() {
-            let mut codegen = Codegen::new("<global>".to_string(), &symbol_table, resolved_symbol_table);
+            let mut codegen =
+                Codegen::new("<global>".to_string(), &symbol_table, resolved_symbol_table);
 
             codegen.codegen_function(&ast);
 
@@ -76,15 +70,7 @@ fn repl() {
 }
 
 fn interpret_file_contents(source: &str) {
-    let builtin_vars = {
-        let mut builtin_vars = BuiltinVars::new();
-        builtin_vars.add_native_fn("print", &builtin_functions::print, 1);
-        builtin_vars.add_native_fn("println", &builtin_functions::println, 1);
-        builtin_vars.add_native_fn("assert_eq", &builtin_functions::assert_eq, 2);
-        builtin_vars.add_native_fn("assert", &builtin_functions::assert, 1);
-        builtin_vars.add_native_fn("clock", &builtin_functions::clock, 0);
-        builtin_vars
-    };
+    let builtin_vars = default_builtin_vars();
 
     let dummy_source = "".into();
     let mut resolver = Resolver::new(&dummy_source);
@@ -102,7 +88,8 @@ fn interpret_file_contents(source: &str) {
     let mut parser = Parser::new(&source);
     let ast = parser.parse_program();
 
-    let mut resolver = Resolver::new_with_existing_accessible_symbols(&source, accessible_symbols.clone());
+    let mut resolver =
+        Resolver::new_with_existing_accessible_symbols(&source, accessible_symbols.clone());
     resolver.resolve_top_level(&ast);
     symbol_table = resolver.symbol_table();
     resolved_symbol_table = resolver.resolved_symbol_table();
