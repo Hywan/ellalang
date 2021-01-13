@@ -92,9 +92,9 @@ impl Token {
     pub fn binop_bp(&self) -> Option<(u8, u8)> {
         match self {
             /* Additive */
-            Token::Plus | Token::Minus => Some((10, 11)),
+            Token::Plus | Token::Minus => Some((8, 9)),
             /* Multiplicative */
-            Token::Asterisk | Token::Slash => Some((12, 13)),
+            Token::Asterisk | Token::Slash => Some((10, 11)),
             /* Assignment */
             Token::Equals => Some((3, 2)),
             /* Equality */
@@ -111,7 +111,7 @@ impl Token {
     /// Binding power `0` and `1` is reserved for accepting any expression.
     pub fn postfix_bp(&self) -> Option<(u8, ())> {
         match self {
-            Token::OpenParen => Some((8, ())),
+            Token::OpenParen => Some((12, ())),
             _ => None,
         }
     }

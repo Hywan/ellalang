@@ -6,7 +6,7 @@ use num_traits::FromPrimitive;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-const INSPECT_VM_STACK: bool = true;
+const INSPECT_VM_STACK: bool = false;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum InterpretResult {
@@ -250,7 +250,7 @@ impl<'a> Vm<'a> {
                             )));
                             self.stack.push(Value::Object(obj));
                         } else {
-                            return self.runtime_error("Operands must be numbers or strings.");
+                            return self.runtime_error(format!("Operands must be numbers or strings. Received {} and {}", a, b));
                         }
                     }
                 }

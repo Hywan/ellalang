@@ -1,0 +1,39 @@
+---
+source: ella-parser/src/parser/expr.rs
+expression: "expr(\"fib(x - 1) + fib(x - 2)\")"
+---
+Binary {
+    lhs: FnCall {
+        callee: Identifier(
+            "fib",
+        ),
+        args: [
+            Binary {
+                lhs: Identifier(
+                    "x",
+                ),
+                op: Minus,
+                rhs: NumberLit(
+                    1.0,
+                ),
+            },
+        ],
+    },
+    op: Plus,
+    rhs: FnCall {
+        callee: Identifier(
+            "fib",
+        ),
+        args: [
+            Binary {
+                lhs: Identifier(
+                    "x",
+                ),
+                op: Minus,
+                rhs: NumberLit(
+                    2.0,
+                ),
+            },
+        ],
+    },
+}

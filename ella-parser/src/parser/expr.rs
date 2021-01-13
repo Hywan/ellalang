@@ -184,5 +184,6 @@ mod tests {
         assert_debug_snapshot!("fn-call-with-args", expr("foo(1, bar)"));
         assert_debug_snapshot!("fn-call-with-nested-args", expr("foo(1, bar, baz())"));
         assert_debug_snapshot!("fn-call-chained", expr("foo(1, 2)(3)(4)"));
+        assert_debug_snapshot!("fn-call-fib", expr("fib(x - 1) + fib(x - 2)"));
     }
 }

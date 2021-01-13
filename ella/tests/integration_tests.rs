@@ -234,4 +234,15 @@ mod control_flow {
             assert_eq(x, 2);"#,
         );
     }
+
+    #[test]
+    fn fibonacci() {
+        interpret(r#"
+            fn fib(x) {
+                if x < 1 { return 1; }
+                else { return fib(x - 1) + fib(x - 2); }
+            }
+            
+            assert_eq(fib(20), 17711);"#);
+    }
 }
