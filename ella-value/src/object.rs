@@ -41,7 +41,7 @@ pub struct Closure {
     /// The wrapped function.
     pub func: Function,
     /// Captured variables.
-    pub upvalues: Vec<Rc<RefCell<UpValue>>>,
+    pub upvalues: Rc<RefCell<Vec<Rc<RefCell<UpValue>>>>>,
 }
 
 /// Represents a captured variable.

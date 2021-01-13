@@ -228,7 +228,7 @@ impl<'a> Vm<'a> {
                 OpCode::LdUpVal => {
                     let index = read_u8!();
                     let upvalue =
-                        self.call_stack.last().unwrap().closure.upvalues[index as usize].clone();
+                        self.call_stack.last().unwrap().closure.upvalues.borrow()[index as usize].clone();
                     let value = self.resolve_upvalue_into_value(&upvalue.borrow());
                     self.stack.push(value);
                 }
@@ -236,7 +236,7 @@ impl<'a> Vm<'a> {
                     let index = read_u8!();
                     let value = self.stack.pop().unwrap();
                     let upvalue =
-                        self.call_stack.last().unwrap().closure.upvalues[index as usize].clone();
+                        self.call_stack.last().unwrap().closure.upvalues.borrow()[index as usize].clone();
                     self.set_upvalue(upvalue, value);
                 }
                 OpCode::CloseUpVal => {
@@ -384,9 +384,9 @@ impl<'a> Vm<'a> {
                     };
 
                     let upvalues_count = func.upvalues_count;
-                    let mut closure = Closure {
+                    let closure = Closure {
                         func,
-                        upvalues: Vec::with_capacity(upvalues_count),
+                        upvalues: Rc::new(RefCell::new(Vec::with_capacity(upvalues_count))),
                     };
 
                     for _i in 0..upvalues_count {
@@ -405,12 +405,12 @@ impl<'a> Vm<'a> {
                                 }
                             }
                         } else {
-                            frame!().closure.upvalues[upvalue_index as usize].clone()
+                            frame!().closure.upvalues.borrow()[upvalue_index as usize].clone()
                         };
 
-                        closure.upvalues.push(upvalue);
+                        closure.upvalues.borrow_mut().push(upvalue);
                     }
-                    debug_assert_eq!(closure.upvalues.len(), upvalues_count);
+                    debug_assert_eq!(closure.upvalues.borrow().len(), upvalues_count);
 
                     self.stack.push(Value::Object(Rc::new(Obj {
                         kind: ObjKind::Closure(closure),
@@ -464,7 +464,7 @@ impl<'a> Vm<'a> {
         };
         let closure = Closure {
             func,
-            upvalues: Vec::new(),
+            upvalues: Rc::new(RefCell::new(Vec::new())),
         };
         self.call_stack.push(CallFrame {
             ip: 0,            // start interpreting at first opcode
