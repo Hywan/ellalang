@@ -83,11 +83,12 @@ impl<'a> Codegen<'a> {
             match symbol.borrow().is_captured {
                 true => {
                     self.chunk.write_chunk(OpCode::CloseUpVal, 0);
-                },
+                }
                 false => {
                     self.chunk.write_chunk(OpCode::Pop, 0);
-                    self.chunk.add_debug_annotation_at_last(format!("cleanup local variable"));
-                },
+                    self.chunk
+                        .add_debug_annotation_at_last(format!("cleanup local variable"));
+                }
             };
         }
     }
@@ -294,7 +295,7 @@ impl<'a> Visitor<'a> for Codegen<'a> {
                     self.visit_stmt(stmt);
                 }
                 self.exit_scope();
-                
+
                 if let Some(else_block) = else_block {
                     let else_jump = self.emit_jump(OpCode::Jmp, 0);
 
@@ -313,6 +314,7 @@ impl<'a> Visitor<'a> for Codegen<'a> {
                     self.chunk.write_chunk(OpCode::Pop, 0);
                 }
             }
+            Stmt::WhileStmt { .. } => todo!(),
             Stmt::ExprStmt(expr) => {
                 self.visit_expr(expr);
                 self.chunk.write_chunk(OpCode::Pop, 0);

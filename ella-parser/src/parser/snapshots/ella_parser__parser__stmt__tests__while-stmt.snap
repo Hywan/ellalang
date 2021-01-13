@@ -1,0 +1,19 @@
+---
+source: ella-parser/src/parser/stmt.rs
+expression: "stmt(r#\"while true { while_block(); }\"#)"
+---
+WhileStmt {
+    condition: BoolLit(
+        true,
+    ),
+    body: [
+        ExprStmt(
+            FnCall {
+                callee: Identifier(
+                    "while_block",
+                ),
+                args: [],
+            },
+        ),
+    ],
+}

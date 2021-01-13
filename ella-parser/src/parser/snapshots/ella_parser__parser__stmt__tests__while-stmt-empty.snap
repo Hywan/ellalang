@@ -1,0 +1,10 @@
+---
+source: ella-parser/src/parser/stmt.rs
+expression: "stmt(r#\"while true {}\"#)"
+---
+WhileStmt {
+    condition: BoolLit(
+        true,
+    ),
+    body: [],
+}

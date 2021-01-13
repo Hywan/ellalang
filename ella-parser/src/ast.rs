@@ -56,6 +56,11 @@ pub enum Stmt {
         /// If `else` clause is not present, this field should be `None`.
         else_block: Option<Vec<Stmt>>,
     },
+    /// While statement.
+    WhileStmt {
+        condition: Expr,
+        body: Vec<Stmt>,
+    },
     /// Expression statement (expression with side effect).
     ExprStmt(Expr),
     /// Return statement.

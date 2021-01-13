@@ -16,6 +16,7 @@ impl<'a> Parser<'a> {
             Token::Return => self.parse_return_stmt(),
             Token::OpenBrace => self.parse_block_stmt(),
             Token::If => self.parse_if_else_stmt(),
+            Token::While => self.parse_while_stmt(),
             _ => {
                 // expression statement
                 let expr = self.parse_expr();
@@ -89,6 +90,28 @@ impl<'a> Parser<'a> {
             if_block,
             else_block,
         }
+    }
+
+    pub fn parse_while_stmt(&mut self) -> Stmt {
+        self.expect(Token::While);
+        let condition = self.parse_expr();
+        let mut body = Vec::new();
+
+        self.expect(Token::OpenBrace);
+        if !self.eat(Token::CloseBrace) {
+            loop {
+                body.push(self.parse_declaration());
+
+                if self.eat(Token::CloseBrace) {
+                    break;
+                } else if self.current_token == Token::Eof {
+                    self.unexpected();
+                    break;
+                }
+            }
+        }
+
+        Stmt::WhileStmt { condition, body }
     }
 
     fn parse_let_declaration(&mut self) -> Stmt {
@@ -209,7 +232,13 @@ mod tests {
                 }"#
             )
         );
-        assert_debug_snapshot!("if-else-stmt-empty", stmt(r#"if condition {} else {}"#))
+        assert_debug_snapshot!("if-else-stmt-empty", stmt(r#"if condition {} else {}"#));
+    }
+
+    #[test]
+    fn test_while_stmt() {
+        assert_debug_snapshot!("while-stmt", stmt(r#"while true { while_block(); }"#));
+        assert_debug_snapshot!("while-stmt-empty", stmt(r#"while true {}"#));
     }
 
     #[test]

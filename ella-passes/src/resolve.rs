@@ -343,6 +343,14 @@ impl<'a> Visitor<'a> for Resolver<'a> {
                     self.exit_scope();
                 }
             }
+            Stmt::WhileStmt {condition, body} => {
+                self.visit_expr(condition);
+                self.enter_scope();
+                for stmt in body {
+                    self.visit_stmt(stmt);
+                }
+                self.exit_scope();
+            }
             Stmt::ExprStmt(expr) => self.visit_expr(expr),
             Stmt::ReturnStmt(expr) => self.visit_expr(expr),
             Stmt::Error => {}

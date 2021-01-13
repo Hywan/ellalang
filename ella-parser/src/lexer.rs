@@ -74,6 +74,8 @@ pub enum Token {
     If,
     #[token("else")]
     Else,
+    #[token("while")]
+    While,
 
     // misc
     #[regex(r"[ \t\n\r\f]+", logos::skip)]

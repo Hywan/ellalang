@@ -73,6 +73,10 @@ pub fn walk_stmt<'ast>(visitor: &mut impl Visitor<'ast>, stmt: &'ast Stmt) {
                 visit_stmt_list!(visitor, else_block);
             }
         }
+        Stmt::WhileStmt { condition, body} => {
+            visitor.visit_expr(condition);
+            visit_stmt_list!(visitor, body);
+        }
         Stmt::ExprStmt(expr) => visitor.visit_expr(expr),
         Stmt::ReturnStmt(expr) => visitor.visit_expr(expr),
         Stmt::Error => {}
