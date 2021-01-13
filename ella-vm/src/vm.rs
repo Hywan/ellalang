@@ -192,71 +192,73 @@ impl<'a> Vm<'a> {
         }
 
         while self.ip() < self.code().len() || try_implicit_ret!() {
-            match OpCode::from_u8(read_u8!()) {
-                Some(OpCode::Ldc) => {
+            let opcode = read_u8!();
+            let opcode = OpCode::from_u8(opcode).expect("invalid opcode");
+            match opcode {
+                OpCode::Ldc => {
                     let constant = read_constant!();
                     self.stack.push(constant);
                 }
-                Some(OpCode::Ldf64) => {
+                OpCode::Ldf64 => {
                     let value = read_f64!();
                     self.stack.push(Value::Number(value));
                 }
-                Some(OpCode::Ld0) => self.stack.push(Value::Number(0.0)),
-                Some(OpCode::Ld1) => self.stack.push(Value::Number(1.0)),
-                Some(OpCode::LdLoc) => {
+                OpCode::Ld0 => self.stack.push(Value::Number(0.0)),
+                OpCode::Ld1 => self.stack.push(Value::Number(1.0)),
+                OpCode::LdLoc => {
                     let local_index = read_u8!() + frame!().frame_pointer as u8;
                     let local = self.stack[local_index as usize].clone();
                     self.stack.push(local);
                 }
-                Some(OpCode::StLoc) => {
+                OpCode::StLoc => {
                     let local_index = read_u8!() + frame!().frame_pointer as u8;
                     let value = self.stack.pop().unwrap();
                     self.stack[local_index as usize] = value;
                 }
-                Some(OpCode::LdGlobal) => {
+                OpCode::LdGlobal => {
                     let index = read_u8!();
                     let local = self.stack[index as usize].clone();
                     self.stack.push(local);
                 }
-                Some(OpCode::StGlobal) => {
+                OpCode::StGlobal => {
                     let index = read_u8!();
                     let value = self.stack.pop().unwrap();
                     self.stack[index as usize] = value;
                 }
-                Some(OpCode::LdUpVal) => {
+                OpCode::LdUpVal => {
                     let index = read_u8!();
                     let upvalue =
                         self.call_stack.last().unwrap().closure.upvalues[index as usize].clone();
                     let value = self.resolve_upvalue_into_value(&upvalue.borrow());
                     self.stack.push(value);
                 }
-                Some(OpCode::StUpVal) => {
+                OpCode::StUpVal => {
                     let index = read_u8!();
                     let value = self.stack.pop().unwrap();
                     let upvalue =
                         self.call_stack.last().unwrap().closure.upvalues[index as usize].clone();
                     self.set_upvalue(upvalue, value);
                 }
-                Some(OpCode::CloseUpVal) => {
+                OpCode::CloseUpVal => {
                     let index = self.stack.len() - 1;
                     self.close_upvalues(index);
                     self.stack.pop().unwrap();
                 }
-                Some(OpCode::Neg) => {
+                OpCode::Neg => {
                     let val = self.stack.pop().unwrap();
                     match val {
                         Value::Number(val) => self.stack.push(Value::Number(-val)),
                         _ => return self.runtime_error("Operand must be a number."),
                     }
                 }
-                Some(OpCode::Not) => {
+                OpCode::Not => {
                     let val = self.stack.pop().unwrap();
                     match val {
                         Value::Bool(val) => self.stack.push(Value::Bool(!val)),
                         _ => return self.runtime_error("Operand must be a boolean."),
                     }
                 }
-                Some(OpCode::Add) => {
+                OpCode::Add => {
                     let b = self.stack.pop().unwrap();
                     let a = self.stack.pop().unwrap();
 
@@ -284,42 +286,42 @@ impl<'a> Vm<'a> {
                         }
                     }
                 }
-                Some(OpCode::Sub) => gen_num_binary_op!(-),
-                Some(OpCode::Mul) => gen_num_binary_op!(*),
-                Some(OpCode::Div) => gen_num_binary_op!(/),
-                Some(OpCode::Ret) => {
+                OpCode::Sub => gen_num_binary_op!(-),
+                OpCode::Mul => gen_num_binary_op!(*),
+                OpCode::Div => gen_num_binary_op!(/),
+                OpCode::Ret => {
                     if self.call_stack.len() <= 1 {
                         return self.runtime_error("Can only use return in a function.");
                     }
                     cleanup_function!();
                 }
-                Some(OpCode::Ret0) => {
+                OpCode::Ret0 => {
                     self.stack.push(Value::Number(0.0));
                     if self.call_stack.len() <= 1 {
                         return self.runtime_error("Can only use return in a function.");
                     }
                     cleanup_function!();
                 }
-                Some(OpCode::Ret1) => {
+                OpCode::Ret1 => {
                     self.stack.push(Value::Number(1.0));
                     if self.call_stack.len() <= 1 {
                         return self.runtime_error("Can only use return in a function.");
                     }
                     cleanup_function!();
                 }
-                Some(OpCode::LdTrue) => self.stack.push(Value::Bool(true)),
-                Some(OpCode::LdFalse) => self.stack.push(Value::Bool(false)),
-                Some(OpCode::Eq) => {
+                OpCode::LdTrue => self.stack.push(Value::Bool(true)),
+                OpCode::LdFalse => self.stack.push(Value::Bool(false)),
+                OpCode::Eq => {
                     let b = self.stack.pop().unwrap();
                     let a = self.stack.pop().unwrap();
                     self.stack.push(Value::Bool(a == b));
                 }
-                Some(OpCode::Greater) => gen_num_binary_op!(>, Value::Bool),
-                Some(OpCode::Less) => gen_num_binary_op!(<, Value::Bool),
-                Some(OpCode::Pop) => {
+                OpCode::Greater => gen_num_binary_op!(>, Value::Bool),
+                OpCode::Less => gen_num_binary_op!(<, Value::Bool),
+                OpCode::Pop => {
                     self.stack.pop().unwrap(); // throw away result
                 }
-                Some(OpCode::Calli) => {
+                OpCode::Calli => {
                     match self.stack.pop().unwrap() {
                         Value::Object(obj) => match &obj.kind {
                             ObjKind::Fn(_) => {
@@ -372,7 +374,7 @@ impl<'a> Vm<'a> {
                         _ => return self.runtime_error("Value is not a function."),
                     }
                 }
-                Some(OpCode::Closure) => {
+                OpCode::Closure => {
                     let func = match read_constant!() {
                         Value::Object(obj) => match &obj.kind {
                             ObjKind::Fn(function) => function.clone(),
@@ -414,21 +416,20 @@ impl<'a> Vm<'a> {
                         kind: ObjKind::Closure(closure),
                     })));
                 }
-                Some(OpCode::Jmp) => {
+                OpCode::Jmp => {
                     let offset = read_u16!();
                     *self.ip_mut() += offset as usize;
                 }
-                Some(OpCode::JmpIfFalse) => {
+                OpCode::JmpIfFalse => {
                     let offset = read_u16!();
                     if matches!(self.stack.last().unwrap(), Value::Bool(false)) {
                         *self.ip_mut() += offset as usize;
                     }
                 }
-                Some(OpCode::Loop) => {
+                OpCode::Loop => {
                     let offset = read_u16!();
                     *self.ip_mut() -= offset as usize;
                 }
-                None => panic!("Invalid instruction"),
             }
 
             if INSPECT_VM_STACK {
