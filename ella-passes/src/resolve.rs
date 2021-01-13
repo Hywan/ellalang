@@ -294,6 +294,25 @@ impl<'a> Visitor<'a> for Resolver<'a> {
                 }
                 self.exit_scope();
             }
+            Stmt::IfElseStmt {
+                condition,
+                if_block,
+                else_block,
+            } => {
+                self.visit_expr(condition);
+                self.enter_scope();
+                for stmt in if_block {
+                    self.visit_stmt(stmt);
+                }
+                self.exit_scope();
+                if let Some(else_block) = else_block {
+                    self.enter_scope();
+                    for stmt in else_block {
+                        self.visit_stmt(stmt);
+                    }
+                    self.exit_scope();
+                }
+            }
             Stmt::ExprStmt(expr) => self.visit_expr(expr),
             Stmt::ReturnStmt(expr) => self.visit_expr(expr),
             Stmt::Error => {}

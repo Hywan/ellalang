@@ -49,6 +49,13 @@ pub enum Stmt {
     },
     /// Block statement.
     Block(Vec<Stmt>),
+    /// If/else statement.
+    IfElseStmt {
+        condition: Expr,
+        if_block: Vec<Stmt>,
+        /// If `else` clause is not present, this field should be `None`.
+        else_block: Option<Vec<Stmt>>,
+    },
     /// Expression statement (expression with side effect).
     ExprStmt(Expr),
     /// Return statement.

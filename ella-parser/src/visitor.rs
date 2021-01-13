@@ -62,6 +62,17 @@ pub fn walk_stmt<'ast>(visitor: &mut impl Visitor<'ast>, stmt: &'ast Stmt) {
             body,
         } => visit_stmt_list!(visitor, body),
         Stmt::Block(body) => visit_stmt_list!(visitor, body),
+        Stmt::IfElseStmt {
+            condition,
+            if_block,
+            else_block,
+        } => {
+            visitor.visit_expr(condition);
+            visit_stmt_list!(visitor, if_block);
+            if let Some(else_block) = else_block {
+                visit_stmt_list!(visitor, else_block);
+            }
+        }
         Stmt::ExprStmt(expr) => visitor.visit_expr(expr),
         Stmt::ReturnStmt(expr) => visitor.visit_expr(expr),
         Stmt::Error => {}

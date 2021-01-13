@@ -248,6 +248,7 @@ impl<'a> Visitor<'a> for Codegen<'a> {
                 }
                 self.exit_scope();
             }
+            Stmt::IfElseStmt { .. } => todo!(),
             Stmt::ExprStmt(expr) => {
                 self.visit_expr(expr);
                 self.chunk.write_chunk(OpCode::Pop, 0);

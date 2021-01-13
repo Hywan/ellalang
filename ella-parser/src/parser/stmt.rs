@@ -15,6 +15,7 @@ impl<'a> Parser<'a> {
         match self.current_token {
             Token::Return => self.parse_return_stmt(),
             Token::OpenBrace => self.parse_block_stmt(),
+            Token::If => self.parse_if_else_stmt(),
             _ => {
                 // expression statement
                 let expr = self.parse_expr();
@@ -45,6 +46,51 @@ impl<'a> Parser<'a> {
         Stmt::Block(body)
     }
 
+    pub fn parse_if_else_stmt(&mut self) -> Stmt {
+        self.expect(Token::If);
+
+        let condition = self.parse_expr();
+        let mut if_block = Vec::new();
+        let mut else_block = None;
+
+        self.expect(Token::OpenBrace);
+        if !self.eat(Token::CloseBrace) {
+            loop {
+                if_block.push(self.parse_declaration());
+
+                if self.eat(Token::CloseBrace) {
+                    break;
+                } else if self.current_token == Token::Eof {
+                    self.unexpected();
+                    break;
+                }
+            }
+        }
+
+        if self.eat(Token::Else) {
+            else_block = Some(Vec::new());
+            self.expect(Token::OpenBrace);
+            if !self.eat(Token::CloseBrace) {
+                loop {
+                    else_block.as_mut().unwrap().push(self.parse_declaration());
+
+                    if self.eat(Token::CloseBrace) {
+                        break;
+                    } else if self.current_token == Token::Eof {
+                        self.unexpected();
+                        break;
+                    }
+                }
+            }
+        }
+
+        Stmt::IfElseStmt {
+            condition,
+            if_block,
+            else_block,
+        }
+    }
+
     fn parse_let_declaration(&mut self) -> Stmt {
         self.expect(Token::Let);
         let ident = if let Token::Identifier(ref ident) = self.current_token {
@@ -58,10 +104,7 @@ impl<'a> Parser<'a> {
         self.expect(Token::Equals);
         let initializer = self.parse_expr();
         self.expect(Token::Semi);
-        Stmt::LetDeclaration {
-            ident,
-            initializer,
-        }
+        Stmt::LetDeclaration { ident, initializer }
     }
 
     fn parse_fn_declaration(&mut self) -> Stmt {
@@ -142,6 +185,31 @@ mod tests {
         assert_debug_snapshot!("block-stmt", stmt("{ 1; }"));
         assert_debug_snapshot!("block-stmt-multiple", stmt("{ 1; 2; }"));
         assert_debug_snapshot!("block-stmt-nested", stmt("{ 1; 2; { 3; } }"));
+    }
+
+    #[test]
+    fn test_if_else_stmt() {
+        assert_debug_snapshot!(
+            "if-stmt",
+            stmt(
+                r#"
+                if condition {
+                    if_block();
+                }"#
+            )
+        );
+        assert_debug_snapshot!(
+            "if-else-stmt",
+            stmt(
+                r#"
+                if condition {
+                    if_block();
+                } else {
+                    else_block();
+                }"#
+            )
+        );
+        assert_debug_snapshot!("if-else-stmt-empty", stmt(r#"if condition {} else {}"#))
     }
 
     #[test]

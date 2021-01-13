@@ -1,0 +1,31 @@
+---
+source: ella-parser/src/parser/stmt.rs
+expression: "stmt(r#\"\n                if condition {\n                    if_block();\n                } else {\n                    else_block();\n                }\"#)"
+---
+IfElseStmt {
+    condition: Identifier(
+        "condition",
+    ),
+    if_block: [
+        ExprStmt(
+            FnCall {
+                callee: Identifier(
+                    "if_block",
+                ),
+                args: [],
+            },
+        ),
+    ],
+    else_block: Some(
+        [
+            ExprStmt(
+                FnCall {
+                    callee: Identifier(
+                        "else_block",
+                    ),
+                    args: [],
+                },
+            ),
+        ],
+    ),
+}

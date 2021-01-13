@@ -70,6 +70,10 @@ pub enum Token {
     Let,
     #[token("return")]
     Return,
+    #[token("if")]
+    If,
+    #[token("else")]
+    Else,
 
     // misc
     #[regex(r"[ \t\n\r\f]+", logos::skip)]

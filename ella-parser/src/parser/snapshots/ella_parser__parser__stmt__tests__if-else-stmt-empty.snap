@@ -1,0 +1,13 @@
+---
+source: ella-parser/src/parser/stmt.rs
+expression: "stmt(r#\"if condition {} else {}\"#)"
+---
+IfElseStmt {
+    condition: Identifier(
+        "condition",
+    ),
+    if_block: [],
+    else_block: Some(
+        [],
+    ),
+}

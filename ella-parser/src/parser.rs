@@ -16,12 +16,12 @@ pub struct Parser<'a> {
     /// Cached token for peeking.
     current_token: Token,
     lexer: Lexer<'a, Token>,
-    /// Source code
+    /// Source code.
     source: &'a Source<'a>,
 }
 
 impl<'a> Parser<'a> {
-    /// Create a new [`Parser`] with the `source`.
+    /// Create a new [`Parser`] from the `source`.
     pub fn new(source: &'a Source<'a>) -> Self {
         let mut lexer = Token::lexer(source.content);
         Self {
@@ -97,6 +97,7 @@ impl<'a> Parser<'a> {
 
     fn expect(&mut self, tok: Token) {
         if !self.eat(tok) {
+            self.next();
             self.unexpected()
         }
     }
