@@ -167,6 +167,8 @@ impl Chunk {
         match OpCode::from_u8(instr) {
             Some(OpCode::Ldc) => self.constant_instr(f, "ldc", offset, msg),
             Some(OpCode::Ldf64) => self.ldf64_instr(f, "ldf64", offset, msg),
+            Some(OpCode::Ld0) => self.simple_instr(f, "ld0", offset, msg),
+            Some(OpCode::Ld1) => self.simple_instr(f, "ld1", offset, msg),
             Some(OpCode::LdLoc) => self.ld_or_st_instr(f, "ldloc", offset, msg),
             Some(OpCode::StLoc) => self.ld_or_st_instr(f, "stloc", offset, msg),
             Some(OpCode::LdGlobal) => self.ld_or_st_instr(f, "ldglobal", offset, msg),
@@ -181,6 +183,8 @@ impl Chunk {
             Some(OpCode::Mul) => self.simple_instr(f, "mul", offset, msg),
             Some(OpCode::Div) => self.simple_instr(f, "div", offset, msg),
             Some(OpCode::Ret) => self.simple_instr(f, "ret", offset, msg),
+            Some(OpCode::Ret0) => self.simple_instr(f, "ret0", offset, msg),
+            Some(OpCode::Ret1) => self.simple_instr(f, "ret1", offset, msg),
             Some(OpCode::LdTrue) => self.simple_instr(f, "ld_true", offset, msg),
             Some(OpCode::LdFalse) => self.simple_instr(f, "ld_false", offset, msg),
             Some(OpCode::Eq) => self.simple_instr(f, "eq", offset, msg),

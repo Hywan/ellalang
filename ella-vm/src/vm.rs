@@ -200,7 +200,9 @@ impl<'a> Vm<'a> {
                 Some(OpCode::Ldf64) => {
                     let value = read_f64!();
                     self.stack.push(Value::Number(value));
-                },
+                }
+                Some(OpCode::Ld0) => self.stack.push(Value::Number(0.0)),
+                Some(OpCode::Ld1) => self.stack.push(Value::Number(1.0)),
                 Some(OpCode::LdLoc) => {
                     let local_index = read_u8!() + frame!().frame_pointer as u8;
                     let local = self.stack[local_index as usize].clone();
@@ -275,7 +277,10 @@ impl<'a> Vm<'a> {
                             )));
                             self.stack.push(Value::Object(obj));
                         } else {
-                            return self.runtime_error(format!("Operands must be numbers or strings. Received {} and {}", a, b));
+                            return self.runtime_error(format!(
+                                "Operands must be numbers or strings. Received {} and {}",
+                                a, b
+                            ));
                         }
                     }
                 }
@@ -283,6 +288,20 @@ impl<'a> Vm<'a> {
                 Some(OpCode::Mul) => gen_num_binary_op!(*),
                 Some(OpCode::Div) => gen_num_binary_op!(/),
                 Some(OpCode::Ret) => {
+                    if self.call_stack.len() <= 1 {
+                        return self.runtime_error("Can only use return in a function.");
+                    }
+                    cleanup_function!();
+                }
+                Some(OpCode::Ret0) => {
+                    self.stack.push(Value::Number(0.0));
+                    if self.call_stack.len() <= 1 {
+                        return self.runtime_error("Can only use return in a function.");
+                    }
+                    cleanup_function!();
+                }
+                Some(OpCode::Ret1) => {
+                    self.stack.push(Value::Number(1.0));
                     if self.call_stack.len() <= 1 {
                         return self.runtime_error("Can only use return in a function.");
                     }

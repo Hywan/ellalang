@@ -118,7 +118,13 @@ impl<'a> Visitor<'a> for Codegen<'a> {
 
         match expr {
             Expr::NumberLit(val) => {
-                self.chunk.emit_ldf64(*val, 0);
+                if *val == 0.0 {
+                    self.chunk.write_chunk(OpCode::Ld0, 0);
+                } else if *val == 1.0 {
+                    self.chunk.write_chunk(OpCode::Ld1, 0);
+                } else {
+                    self.chunk.emit_ldf64(*val, 0);
+                }
             }
             Expr::BoolLit(val) => {
                 match val {
@@ -187,7 +193,7 @@ impl<'a> Visitor<'a> for Codegen<'a> {
                     Token::Equals => {
                         let resolved_symbol =
                             *self.resolve_result.lookup_identifier(lhs.as_ref()).unwrap();
-                            
+
                         if resolved_symbol.is_global {
                             self.chunk.write_chunk(OpCode::StGlobal, 0);
                             self.chunk.write_chunk(resolved_symbol.offset as u8, 0);
@@ -346,8 +352,19 @@ impl<'a> Visitor<'a> for Codegen<'a> {
                 self.chunk.write_chunk(OpCode::Pop, 0);
             }
             Stmt::ReturnStmt(expr) => {
-                self.visit_expr(expr);
-                self.chunk.write_chunk(OpCode::Ret, 0);
+                if let Expr::NumberLit(number) = expr {
+                    if *number == 0.0 {
+                        self.chunk.write_chunk(OpCode::Ret0, 0);
+                    } else if *number == 1.0 {
+                        self.chunk.write_chunk(OpCode::Ret1, 0);
+                    } else {
+                        self.chunk.emit_ldf64(*number, 0);
+                        self.chunk.write_chunk(OpCode::Ret, 0);
+                    }
+                } else {
+                    self.visit_expr(expr);
+                    self.chunk.write_chunk(OpCode::Ret, 0);
+                }
             }
             Stmt::Error => unreachable!(),
         }

@@ -15,6 +15,12 @@ pub enum OpCode {
     /// Load a f64 onto the stack.
     /// *9 bytes (1 f64 le operand)*
     Ldf64 = 26,
+    /// Load the constant 0 onto the stack.
+    /// *1 byte*
+    Ld0 = 27,
+    /// Load the constant 1 onto the stack.
+    /// *1 byte*
+    Ld1 = 28,
     /// Load a local variable onto the stack.
     /// *2 bytes (1 operand)*
     LdLoc = 15,
@@ -51,6 +57,12 @@ pub enum OpCode {
     /// Returns the last value on the stack.
     /// *1 byte*
     Ret = 7,
+    /// Return the constant 0.
+    /// *1 byte*
+    Ret0 = 29,
+    /// Return the constant 1.
+    /// *1 byte*
+    Ret1 = 30,
     /// Loads `true` onto the stack.
     /// *1 byte*
     LdTrue = 8,
