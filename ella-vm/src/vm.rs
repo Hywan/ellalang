@@ -6,7 +6,7 @@ use num_traits::FromPrimitive;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-const INSPECT_VM_STACK: bool = false;
+const INSPECT_VM_STACK: bool = true;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum InterpretResult {
@@ -96,6 +96,15 @@ impl<'a> Vm<'a> {
                 let byte: u8 = self.code()[self.ip()];
                 *self.ip_mut() += 1;
                 byte
+            }};
+        }
+
+        macro_rules! read_u16 {
+            () => {{
+                let short: u16 =
+                    (self.code()[self.ip()] as u16) << 8 | self.code()[self.ip() + 1] as u16;
+                *self.ip_mut() += 2;
+                short
             }};
         }
 
@@ -361,8 +370,16 @@ impl<'a> Vm<'a> {
                         kind: ObjKind::Closure(closure),
                     })));
                 }
-                Some(OpCode::Jmp) => todo!(),
-                Some(OpCode::JmpIfFalse) => todo!(),
+                Some(OpCode::Jmp) => {
+                    let offset = read_u16!();
+                    *self.ip_mut() += offset as usize;
+                }
+                Some(OpCode::JmpIfFalse) => {
+                    let offset = read_u16!();
+                    if matches!(self.stack.last().unwrap(), Value::Bool(false)) {
+                        *self.ip_mut() += offset as usize;
+                    }
+                }
                 None => panic!("Invalid instruction"),
             }
 

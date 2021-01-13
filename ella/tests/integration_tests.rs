@@ -207,3 +207,31 @@ mod functions {
         }
     }
 }
+
+mod control_flow {
+    use super::*;
+
+    #[test]
+    fn if_and_else() {
+        interpret(
+            r#"
+            let x = 0;
+
+            let condition = true;
+            if condition {
+                x = 1;
+            } else {
+                x = 2;
+            }
+            assert_eq(x, 1);
+
+            condition = false;
+            if condition {
+                x = 1;
+            } else {
+                x = 2;
+            }
+            assert_eq(x, 2);"#,
+        );
+    }
+}

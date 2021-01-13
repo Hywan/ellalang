@@ -81,18 +81,23 @@ impl<'a> Codegen<'a> {
         let scope = self.scope_stack.pop().unwrap();
         for symbol in scope {
             match symbol.borrow().is_captured {
-                true => self.chunk.write_chunk(OpCode::CloseUpVal, 0),
-                false => self.chunk.write_chunk(OpCode::Pop, 0),
+                true => {
+                    self.chunk.write_chunk(OpCode::CloseUpVal, 0);
+                },
+                false => {
+                    self.chunk.write_chunk(OpCode::Pop, 0);
+                    self.chunk.add_debug_annotation_at_last(format!("cleanup local variable"));
+                },
             };
         }
     }
 
     /// Emits a placeholder jump.
     /// Returns the index of the start of the jump offset. This should be later patched using [`Chunk::patch_jump`].
-    fn emit_jump(&mut self, instr: OpCode) -> usize {
-        self.chunk.write_chunk(instr, 0);
-        self.chunk.write_chunk(0xff, 0); // placeholder
-        self.chunk.write_chunk(0xff, 0); // placeholder
+    fn emit_jump(&mut self, instr: OpCode, line: usize) -> usize {
+        self.chunk.write_chunk(instr, line);
+        self.chunk.write_chunk(0xff, line); // placeholder
+        self.chunk.write_chunk(0xff, line); // placeholder
         self.chunk.code.len() - 2
     }
 }
@@ -132,13 +137,13 @@ impl<'a> Visitor<'a> for Codegen<'a> {
                     true => {
                         self.chunk.write_chunk(OpCode::LdUpVal, 0);
                         self.chunk
-                            .add_debug_annotation_at_last(format!("Load upvalue {}", ident));
+                            .add_debug_annotation_at_last(format!("load upvalue {}", ident));
                         self.chunk.write_chunk(resolved_symbol.offset as u8, 0);
                     }
                     false => {
                         self.chunk.write_chunk(OpCode::LdLoc, 0);
                         self.chunk
-                            .add_debug_annotation_at_last(format!("Load local variable {}", ident));
+                            .add_debug_annotation_at_last(format!("load local variable {}", ident));
                         self.chunk.write_chunk(resolved_symbol.offset as u8, 0);
                     }
                 }
@@ -273,7 +278,41 @@ impl<'a> Visitor<'a> for Codegen<'a> {
                 }
                 self.exit_scope();
             }
-            Stmt::IfElseStmt { .. } => todo!(),
+            Stmt::IfElseStmt {
+                condition,
+                if_block,
+                else_block,
+            } => {
+                self.visit_expr(condition);
+                self.chunk.add_debug_annotation_at_last("if condition");
+
+                let then_jump = self.emit_jump(OpCode::JmpIfFalse, 0);
+                self.chunk.write_chunk(OpCode::Pop, 0);
+
+                self.enter_scope();
+                for stmt in if_block {
+                    self.visit_stmt(stmt);
+                }
+                self.exit_scope();
+                
+                if let Some(else_block) = else_block {
+                    let else_jump = self.emit_jump(OpCode::Jmp, 0);
+
+                    self.chunk.patch_jump(then_jump);
+                    self.chunk.write_chunk(OpCode::Pop, 0);
+
+                    self.enter_scope();
+                    for stmt in else_block {
+                        self.visit_stmt(stmt);
+                    }
+                    self.exit_scope();
+
+                    self.chunk.patch_jump(else_jump);
+                } else {
+                    self.chunk.patch_jump(then_jump);
+                    self.chunk.write_chunk(OpCode::Pop, 0);
+                }
+            }
             Stmt::ExprStmt(expr) => {
                 self.visit_expr(expr);
                 self.chunk.write_chunk(OpCode::Pop, 0);

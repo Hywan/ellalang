@@ -60,7 +60,12 @@ pub enum OpCode {
     /// Creates a closure with a constant function and pushes it onto the stack.
     /// *Variable number of operands*
     Closure = 19,
+    /// Jump with the specified offset.
+    /// *2 bytes (1 u16 operand)*
     Jmp = 21,
+    /// Jump with the specified offset if the last value on the stack is `true`.
+    /// **NOTE**: This instruction does not pop the stack.
+    /// *2 bytes (1 u16 operand)*
     JmpIfFalse = 22,
 }
 
@@ -185,7 +190,7 @@ impl Chunk {
     /// This method should be called right after writing the [`OpCode`] and before writing any operands.
     ///
     /// **NOTE**: overrides any existing debug annotation.
-    pub fn add_debug_annotation_at_last(&mut self, message: String) {
-        self.debug_annotations.insert(self.code.len() - 1, message);
+    pub fn add_debug_annotation_at_last(&mut self, message: impl ToString) {
+        self.debug_annotations.insert(self.code.len() - 1, message.to_string());
     }
 }
