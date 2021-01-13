@@ -89,7 +89,7 @@ impl Chunk {
                     writeln!(
                         f,
                         "{:04} {:>4} `--{:<7}{:>2}",
-                        offset,
+                        style(offset).black().bright(),
                         "|",
                         if is_local != 0 { "local" } else { "upvalue" },
                         index
