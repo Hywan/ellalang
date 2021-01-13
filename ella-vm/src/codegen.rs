@@ -118,9 +118,7 @@ impl<'a> Visitor<'a> for Codegen<'a> {
 
         match expr {
             Expr::NumberLit(val) => {
-                let constant = self.chunk.add_constant(Value::Number(*val));
-                self.chunk.write_chunk(OpCode::Ldc, 0);
-                self.chunk.write_chunk(constant, 0);
+                self.chunk.emit_ldf64(*val, 0);
             }
             Expr::BoolLit(val) => {
                 match val {

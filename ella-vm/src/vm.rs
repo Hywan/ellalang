@@ -108,6 +108,17 @@ impl<'a> Vm<'a> {
             }};
         }
 
+        macro_rules! read_f64 {
+            () => {{
+                let mut bytes: [u8; 8] = [0; 8];
+                bytes.copy_from_slice(&self.code()[self.ip()..self.ip() + 8]);
+
+                let value = f64::from_le_bytes(bytes);
+                *self.ip_mut() += 8;
+                value
+            }};
+        }
+
         macro_rules! read_constant {
             () => {{
                 let constant: Value =
@@ -186,6 +197,10 @@ impl<'a> Vm<'a> {
                     let constant = read_constant!();
                     self.stack.push(constant);
                 }
+                Some(OpCode::Ldf64) => {
+                    let value = read_f64!();
+                    self.stack.push(Value::Number(value));
+                },
                 Some(OpCode::LdLoc) => {
                     let local_index = read_u8!() + frame!().frame_pointer as u8;
                     let local = self.stack[local_index as usize].clone();

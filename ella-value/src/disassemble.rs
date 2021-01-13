@@ -51,6 +51,22 @@ impl Chunk {
         Ok(offset + 2)
     }
 
+    /// Disassemble `ldf64` (9 bytes) instruction.
+    fn ldf64_instr(
+        &self,
+        f: &mut fmt::Formatter<'_>,
+        name: &str,
+        offset: usize,
+        msg: &str,
+    ) -> Result<usize, fmt::Error> {
+        let mut bytes: [u8; 8] = [0; 8];
+        bytes.copy_from_slice(&self.code[offset + 1..offset + 9]);
+        let number = f64::from_le_bytes(bytes);
+
+        writeln!(f, "{:<10} {} {}", name, number, msg)?;
+        Ok(offset + 9)
+    }
+
     /// Disassemble `calli` (2 bytes) instruction.
     fn calli_instr(
         &self,
@@ -150,6 +166,7 @@ impl Chunk {
 
         match OpCode::from_u8(instr) {
             Some(OpCode::Ldc) => self.constant_instr(f, "ldc", offset, msg),
+            Some(OpCode::Ldf64) => self.ldf64_instr(f, "ldf64", offset, msg),
             Some(OpCode::LdLoc) => self.ld_or_st_instr(f, "ldloc", offset, msg),
             Some(OpCode::StLoc) => self.ld_or_st_instr(f, "stloc", offset, msg),
             Some(OpCode::LdGlobal) => self.ld_or_st_instr(f, "ldglobal", offset, msg),

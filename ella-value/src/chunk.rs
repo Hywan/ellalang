@@ -12,6 +12,9 @@ pub enum OpCode {
     /// Load a constant onto the stack.
     /// *2 bytes (1 operand)*
     Ldc = 0,
+    /// Load a f64 onto the stack.
+    /// *9 bytes (1 f64 le operand)*
+    Ldf64 = 26,
     /// Load a local variable onto the stack.
     /// *2 bytes (1 operand)*
     LdLoc = 15,
@@ -172,6 +175,15 @@ impl Chunk {
 
         self.code[offset] = ((jump >> 8) & 0xff) as u8;
         self.code[offset + 1] = (jump & 0xff) as u8;
+    }
+
+    /// Creates a `ldf64` instruction with the specified value.
+    pub fn emit_ldf64(&mut self, value: f64, line: usize) {
+        self.write_chunk(OpCode::Ldf64, line);
+        let bytes = value.to_le_bytes();
+        for byte in bytes.iter() {
+            self.write_chunk(*byte, line);
+        }
     }
 
     /// Add a constant to the constant table.
