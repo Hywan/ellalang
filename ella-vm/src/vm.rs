@@ -196,6 +196,16 @@ impl<'a> Vm<'a> {
                     let value = self.stack.pop().unwrap();
                     self.stack[local_index as usize] = value;
                 }
+                Some(OpCode::LdGlobal) => {
+                    let index = read_u8!();
+                    let local = self.stack[index as usize].clone();
+                    self.stack.push(local);
+                }
+                Some(OpCode::StGlobal) => {
+                    let index = read_u8!();
+                    let value = self.stack.pop().unwrap();
+                    self.stack[index as usize] = value;
+                }
                 Some(OpCode::LdUpVal) => {
                     let index = read_u8!();
                     let upvalue =

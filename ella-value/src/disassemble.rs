@@ -38,7 +38,7 @@ impl Chunk {
         Ok(offset + 2)
     }
 
-    /// Disassemble `ldloc`, `stloc`, `ldupval` and `stupval` (2 bytes) instruction.
+    /// Disassemble `ldloc`, `stloc`, `ldglobal`, `stglobal`, `ldupval` and `stupval` (2 bytes) instruction.
     fn ld_or_st_instr(
         &self,
         f: &mut fmt::Formatter<'_>,
@@ -152,6 +152,8 @@ impl Chunk {
             Some(OpCode::Ldc) => self.constant_instr(f, "ldc", offset, msg),
             Some(OpCode::LdLoc) => self.ld_or_st_instr(f, "ldloc", offset, msg),
             Some(OpCode::StLoc) => self.ld_or_st_instr(f, "stloc", offset, msg),
+            Some(OpCode::LdGlobal) => self.ld_or_st_instr(f, "ldglobal", offset, msg),
+            Some(OpCode::StGlobal) => self.ld_or_st_instr(f, "stglobal", offset, msg),
             Some(OpCode::LdUpVal) => self.ld_or_st_instr(f, "ldupval", offset, msg),
             Some(OpCode::StUpVal) => self.ld_or_st_instr(f, "stupval", offset, msg),
             Some(OpCode::CloseUpVal) => self.simple_instr(f, "closeupval", offset, msg),

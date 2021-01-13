@@ -51,6 +51,8 @@ pub struct ResolvedUpValue {
 pub struct ResolvedSymbol {
     /// The offset relative to the current function's offset (`current_func_offset`).
     pub offset: i32,
+    /// Optimization to emit `ldglobal` and `stglobal` instructions.
+    pub is_global: bool,
     pub is_upvalue: bool,
 }
 
@@ -181,7 +183,10 @@ impl<'a> Resolver<'a> {
     ) -> Option<(usize, Rc<RefCell<Symbol>>)> {
         for (i, symbol) in self.accessible_symbols.iter().enumerate().rev() {
             if symbol.borrow().ident == ident {
-                if self.in_same_function_scope(
+                if self.find_function_scope_depth(symbol.borrow().scope_depth) == 0 {
+                    return Some((i, symbol.clone()));
+                }
+                else if self.in_same_function_scope(
                     symbol.borrow().scope_depth,
                     *self.function_scope_depths.last().unwrap(),
                 ) {
@@ -256,6 +261,8 @@ impl<'a> Visitor<'a> for Resolver<'a> {
                         expr as *const Expr,
                         ResolvedSymbol {
                             offset: offset as i32,
+                            is_global: self.find_function_scope_depth(symbol.borrow().scope_depth)
+                                == 0,
                             is_upvalue: self.find_function_scope_depth(
                                 *self.function_scope_depths.last().unwrap(),
                             ) > self
@@ -343,7 +350,7 @@ impl<'a> Visitor<'a> for Resolver<'a> {
                     self.exit_scope();
                 }
             }
-            Stmt::WhileStmt {condition, body} => {
+            Stmt::WhileStmt { condition, body } => {
                 self.visit_expr(condition);
                 self.enter_scope();
                 for stmt in body {

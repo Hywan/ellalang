@@ -18,6 +18,14 @@ pub enum OpCode {
     /// Stores the top value on the stack into a local variable.
     /// *2 bytes (1 operand)*
     StLoc = 16,
+    /// Loads a global variable onto the stack.
+    /// The operand is the absolute position of the variable on the stack.
+    /// *2 bytes (1 operand)*
+    LdGlobal = 24,
+    /// Sets a global variable onto the stack.
+    /// The operand is the absolute position of the variable on the stack.
+    /// *2 bytes (1 operand)*
+    StGlobal = 25,
     /// Loads an upvalue onto the stack.
     /// *2 bytes (1 operand)*
     LdUpVal = 17,
@@ -195,6 +203,7 @@ impl Chunk {
     ///
     /// **NOTE**: overrides any existing debug annotation.
     pub fn add_debug_annotation_at_last(&mut self, message: impl ToString) {
-        self.debug_annotations.insert(self.code.len() - 1, message.to_string());
+        self.debug_annotations
+            .insert(self.code.len() - 1, message.to_string());
     }
 }

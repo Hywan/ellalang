@@ -143,19 +143,22 @@ impl<'a> Visitor<'a> for Codegen<'a> {
             }
             Expr::Identifier(ident) => {
                 let resolved_symbol = *self.resolve_result.lookup_identifier(expr).unwrap();
-                match resolved_symbol.is_upvalue {
-                    true => {
-                        self.chunk.write_chunk(OpCode::LdUpVal, 0);
-                        self.chunk
-                            .add_debug_annotation_at_last(format!("load upvalue {}", ident));
-                        self.chunk.write_chunk(resolved_symbol.offset as u8, 0);
-                    }
-                    false => {
-                        self.chunk.write_chunk(OpCode::LdLoc, 0);
-                        self.chunk
-                            .add_debug_annotation_at_last(format!("load local variable {}", ident));
-                        self.chunk.write_chunk(resolved_symbol.offset as u8, 0);
-                    }
+
+                if resolved_symbol.is_global {
+                    self.chunk.write_chunk(OpCode::LdGlobal, 0);
+                    self.chunk
+                        .add_debug_annotation_at_last(format!("load global variable {}", ident));
+                    self.chunk.write_chunk(resolved_symbol.offset as u8, 0);
+                } else if resolved_symbol.is_upvalue {
+                    self.chunk.write_chunk(OpCode::LdUpVal, 0);
+                    self.chunk
+                        .add_debug_annotation_at_last(format!("load upvalue {}", ident));
+                    self.chunk.write_chunk(resolved_symbol.offset as u8, 0);
+                } else {
+                    self.chunk.write_chunk(OpCode::LdLoc, 0);
+                    self.chunk
+                        .add_debug_annotation_at_last(format!("load local variable {}", ident));
+                    self.chunk.write_chunk(resolved_symbol.offset as u8, 0);
                 }
             }
             Expr::FnCall { callee, args } => {
@@ -186,15 +189,16 @@ impl<'a> Visitor<'a> for Codegen<'a> {
                     Token::Equals => {
                         let resolved_symbol =
                             *self.resolve_result.lookup_identifier(lhs.as_ref()).unwrap();
-                        match resolved_symbol.is_upvalue {
-                            true => {
-                                self.chunk.write_chunk(OpCode::StUpVal, 0);
-                                self.chunk.write_chunk(resolved_symbol.offset as u8, 0);
-                            }
-                            false => {
-                                self.chunk.write_chunk(OpCode::StLoc, 0);
-                                self.chunk.write_chunk(resolved_symbol.offset as u8, 0);
-                            }
+                            
+                        if resolved_symbol.is_global {
+                            self.chunk.write_chunk(OpCode::StGlobal, 0);
+                            self.chunk.write_chunk(resolved_symbol.offset as u8, 0);
+                        } else if resolved_symbol.is_upvalue {
+                            self.chunk.write_chunk(OpCode::StUpVal, 0);
+                            self.chunk.write_chunk(resolved_symbol.offset as u8, 0);
+                        } else {
+                            self.chunk.write_chunk(OpCode::StLoc, 0);
+                            self.chunk.write_chunk(resolved_symbol.offset as u8, 0);
                         }
                     }
                     Token::EqualsEquals => {
