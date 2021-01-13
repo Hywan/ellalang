@@ -106,7 +106,7 @@ impl Chunk {
         Ok(offset)
     }
 
-    /// Disassembles `jmp` and `jmp_if_false` (3 bytes) instruction.
+    /// Disassembles `jmp` and `jmp_if_false` and `loop` (3 bytes) instruction.
     fn jmp_instr(
         &self,
         f: &mut fmt::Formatter<'_>,
@@ -172,6 +172,7 @@ impl Chunk {
             Some(OpCode::Closure) => self.closure_instr(f, "closure", offset, msg),
             Some(OpCode::Jmp) => self.jmp_instr(f, "jmp", offset, msg),
             Some(OpCode::JmpIfFalse) => self.jmp_instr(f, "jmp_if_false", offset, msg),
+            Some(OpCode::Loop) => self.jmp_instr(f, "loop", offset, msg),
             None => self.simple_instr(f, "invalid", offset, msg), // skip bad instruction
         } // returns the next ip
     }

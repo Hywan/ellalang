@@ -237,12 +237,28 @@ mod control_flow {
 
     #[test]
     fn fibonacci() {
-        interpret(r#"
+        interpret(
+            r#"
             fn fib(x) {
                 if x <= 1 { return 1; }
                 else { return fib(x - 1) + fib(x - 2); }
             }
             
-            assert_eq(fib(20), 10946);"#);
+            assert_eq(fib(20), 10946);"#,
+        );
+    }
+
+    #[test]
+    fn accumulate() {
+        interpret(
+            r#"
+            let x = 0;
+            let i = 0;
+            while i < 20 {
+                x = x + i;
+                i = i + 1;
+            }
+            assert_eq(x, 190);"#,
+        );
     }
 }

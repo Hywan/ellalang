@@ -61,12 +61,16 @@ pub enum OpCode {
     /// *Variable number of operands*
     Closure = 19,
     /// Jump with the specified offset.
+    /// **NOTE**: `jmp` cannot jump backwards. To jump backwards, use [`OpCode::Loop`].
     /// *2 bytes (1 u16 operand)*
     Jmp = 21,
     /// Jump with the specified offset if the last value on the stack is `true`.
     /// **NOTE**: This instruction does not pop the stack.
     /// *2 bytes (1 u16 operand)*
     JmpIfFalse = 22,
+    /// Jump backwards with the specified offset.
+    /// *2 bytes (1 u16 operand)*
+    Loop = 23,
 }
 
 /// Represents a chunk of bytecode.

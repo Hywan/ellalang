@@ -380,6 +380,10 @@ impl<'a> Vm<'a> {
                         *self.ip_mut() += offset as usize;
                     }
                 }
+                Some(OpCode::Loop) => {
+                    let offset = read_u16!();
+                    *self.ip_mut() -= offset as usize;
+                }
                 None => panic!("Invalid instruction"),
             }
 

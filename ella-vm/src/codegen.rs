@@ -101,6 +101,15 @@ impl<'a> Codegen<'a> {
         self.chunk.write_chunk(0xff, line); // placeholder
         self.chunk.code.len() - 2
     }
+
+    /// Emits a `loop` instruction.
+    fn emit_loop(&mut self, instr: OpCode, loop_start: usize, line: usize) {
+        let offset = self.chunk.code.len() - loop_start + 3;
+
+        self.chunk.write_chunk(instr, line);
+        self.chunk.write_chunk(((offset >> 8) & 0xff) as u8, line);
+        self.chunk.write_chunk((offset & 0xff) as u8, line);
+    }
 }
 
 impl<'a> Visitor<'a> for Codegen<'a> {
@@ -314,7 +323,22 @@ impl<'a> Visitor<'a> for Codegen<'a> {
                     self.chunk.write_chunk(OpCode::Pop, 0);
                 }
             }
-            Stmt::WhileStmt { .. } => todo!(),
+            Stmt::WhileStmt { condition, body } => {
+                let loop_start = self.chunk.code.len();
+                self.visit_expr(condition);
+
+                let exit_jump = self.emit_jump(OpCode::JmpIfFalse, 0);
+                self.chunk.write_chunk(OpCode::Pop, 0);
+
+                for stmt in body {
+                    self.visit_stmt(stmt);
+                }
+
+                self.emit_loop(OpCode::Loop, loop_start, 0);
+
+                self.chunk.patch_jump(exit_jump);
+                self.chunk.write_chunk(OpCode::Pop, 0);
+            }
             Stmt::ExprStmt(expr) => {
                 self.visit_expr(expr);
                 self.chunk.write_chunk(OpCode::Pop, 0);
