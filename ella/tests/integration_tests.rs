@@ -55,6 +55,21 @@ fn parse_number() {
     interpret(r#"assert(is_nan(parse_number(1)));"#);
 }
 
+#[test]
+fn op_assign() {
+    interpret(
+        r#"
+        let x = 10;
+        assert_eq(x, 10);
+
+        assert_eq(x = 12, 12);// should be new value
+        assert_eq(x += 10, 22);
+        assert_eq(x -= 20, 2);
+        assert_eq(x *= 2, 4);
+        assert_eq(x /= 4, 1);"#,
+    );
+}
+
 mod functions {
     use super::*;
 

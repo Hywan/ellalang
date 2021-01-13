@@ -212,7 +212,7 @@ impl<'a> Vm<'a> {
                 }
                 OpCode::StLoc => {
                     let local_index = read_u8!() + frame!().frame_pointer as u8;
-                    let value = self.stack.pop().unwrap();
+                    let value = self.stack.last().unwrap().clone();
                     self.stack[local_index as usize] = value;
                 }
                 OpCode::LdGlobal => {
@@ -222,7 +222,7 @@ impl<'a> Vm<'a> {
                 }
                 OpCode::StGlobal => {
                     let index = read_u8!();
-                    let value = self.stack.pop().unwrap();
+                    let value = self.stack.last().unwrap().clone();
                     self.stack[index as usize] = value;
                 }
                 OpCode::LdUpVal => {
@@ -234,7 +234,7 @@ impl<'a> Vm<'a> {
                 }
                 OpCode::StUpVal => {
                     let index = read_u8!();
-                    let value = self.stack.pop().unwrap();
+                    let value = self.stack.last().unwrap().clone();
                     let upvalue =
                         self.call_stack.last().unwrap().closure.upvalues.borrow()[index as usize].clone();
                     self.set_upvalue(upvalue, value);

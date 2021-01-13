@@ -34,6 +34,14 @@ pub enum Token {
     // - assignment
     #[token("=")]
     Equals,
+    #[token("+=")]
+    PlusEquals,
+    #[token("-=")]
+    MinusEquals,
+    #[token("*=")]
+    AsteriskEquals,
+    #[token("/=")]
+    SlashEquals,
     // - equality
     #[token("==")]
     EqualsEquals,
@@ -98,7 +106,11 @@ impl Token {
             /* Multiplicative */
             Token::Asterisk | Token::Slash => Some((10, 11)),
             /* Assignment */
-            Token::Equals => Some((3, 2)),
+            Token::Equals
+            | Token::PlusEquals
+            | Token::MinusEquals
+            | Token::AsteriskEquals
+            | Token::SlashEquals => Some((3, 2)),
             /* Equality */
             Token::EqualsEquals | Token::NotEquals => Some((4, 5)),
             Token::GreaterThan

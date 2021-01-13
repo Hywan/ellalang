@@ -116,6 +116,55 @@ impl<'a> Visitor<'a> for Codegen<'a> {
     fn visit_expr(&mut self, expr: &'a Expr) {
         // Do not use default walking logic.
 
+        /// Generate codegen for shorthand assignments (e.g. `+=`).
+        macro_rules! gen_op_assign {
+            ($instr: expr, $lhs: expr, $rhs: expr, $line: expr) => {{
+                let resolved_symbol = *self.resolve_result.lookup_identifier($lhs).unwrap();
+
+                // load value
+                if resolved_symbol.is_global {
+                    self.chunk.write_chunk(OpCode::LdGlobal, $line);
+                    self.chunk.write_chunk(resolved_symbol.offset as u8, $line);
+                } else if resolved_symbol.is_upvalue {
+                    self.chunk.write_chunk(OpCode::LdUpVal, $line);
+                    self.chunk.write_chunk(resolved_symbol.offset as u8, $line);
+                } else {
+                    self.chunk.write_chunk(OpCode::LdLoc, $line);
+                    self.chunk.write_chunk(resolved_symbol.offset as u8, $line);
+                }
+
+                self.visit_expr($rhs);
+                self.chunk.write_chunk($instr, $line);
+
+                // store value
+                if resolved_symbol.is_global {
+                    self.chunk.write_chunk(OpCode::StGlobal, $line);
+                    self.chunk.write_chunk(resolved_symbol.offset as u8, $line);
+                } else if resolved_symbol.is_upvalue {
+                    self.chunk.write_chunk(OpCode::StUpVal, $line);
+                    self.chunk.write_chunk(resolved_symbol.offset as u8, $line);
+                } else {
+                    self.chunk.write_chunk(OpCode::StLoc, $line);
+                    self.chunk.write_chunk(resolved_symbol.offset as u8, $line);
+                }
+
+                self.chunk.write_chunk(OpCode::Pop, $line); // remove rhs
+                self.chunk.write_chunk(OpCode::Pop, $line); // intentional 2nd pop
+
+                // load value, result of op assign is new value
+                if resolved_symbol.is_global {
+                    self.chunk.write_chunk(OpCode::LdGlobal, $line);
+                    self.chunk.write_chunk(resolved_symbol.offset as u8, $line);
+                } else if resolved_symbol.is_upvalue {
+                    self.chunk.write_chunk(OpCode::LdUpVal, $line);
+                    self.chunk.write_chunk(resolved_symbol.offset as u8, $line);
+                } else {
+                    self.chunk.write_chunk(OpCode::LdLoc, $line);
+                    self.chunk.write_chunk(resolved_symbol.offset as u8, $line);
+                }
+            }};
+        }
+
         match expr {
             Expr::NumberLit(val) => {
                 if *val == 0.0 {
@@ -175,8 +224,15 @@ impl<'a> Visitor<'a> for Codegen<'a> {
                 self.chunk.write_chunk(arity, 0);
             }
             Expr::Binary { lhs, op, rhs } => {
-                self.visit_expr(lhs);
-                self.visit_expr(rhs);
+                match op {
+                    Token::Equals | Token::PlusEquals => {
+                        self.visit_expr(rhs); // do not codegen lhs
+                    }
+                    _ => {
+                        self.visit_expr(lhs);
+                        self.visit_expr(rhs);
+                    }
+                }
                 match op {
                     Token::Plus => {
                         self.chunk.write_chunk(OpCode::Add, 0);
@@ -205,6 +261,10 @@ impl<'a> Visitor<'a> for Codegen<'a> {
                             self.chunk.write_chunk(resolved_symbol.offset as u8, 0);
                         }
                     }
+                    Token::PlusEquals => gen_op_assign!(OpCode::Add, lhs, rhs, 0),
+                    Token::MinusEquals => gen_op_assign!(OpCode::Sub, lhs, rhs, 0),
+                    Token::AsteriskEquals => gen_op_assign!(OpCode::Mul, lhs, rhs, 0),
+                    Token::SlashEquals => gen_op_assign!(OpCode::Div, lhs, rhs, 0),
                     Token::EqualsEquals => {
                         self.chunk.write_chunk(OpCode::Eq, 0);
                     }
