@@ -112,7 +112,7 @@ impl Chunk {
         f: &mut fmt::Formatter<'_>,
         offset: usize,
     ) -> Result<usize, fmt::Error> {
-        write!(f, "{:04} ", offset)?;
+        write!(f, "{:04} ", style(offset).black().bright())?;
 
         let instr = self.code[offset];
 
@@ -132,7 +132,7 @@ impl Chunk {
                     .map(|string| format!("// {}", string))
                     .unwrap_or(blank_msg),
             )
-            .green()
+            .color256(29) // dark green
         );
 
         match OpCode::from_u8(instr) {
