@@ -83,8 +83,17 @@ impl<'a> Codegen<'a> {
             match symbol.borrow().is_captured {
                 true => self.chunk.write_chunk(OpCode::CloseUpVal, 0),
                 false => self.chunk.write_chunk(OpCode::Pop, 0),
-            }
+            };
         }
+    }
+
+    /// Emits a placeholder jump.
+    /// Returns the index of the start of the jump offset. This should be later patched using [`Chunk::patch_jump`].
+    fn emit_jump(&mut self, instr: OpCode) -> usize {
+        self.chunk.write_chunk(instr, 0);
+        self.chunk.write_chunk(0xff, 0); // placeholder
+        self.chunk.write_chunk(0xff, 0); // placeholder
+        self.chunk.code.len() - 2
     }
 }
 
@@ -98,10 +107,12 @@ impl<'a> Visitor<'a> for Codegen<'a> {
                 self.chunk.write_chunk(OpCode::Ldc, 0);
                 self.chunk.write_chunk(constant, 0);
             }
-            Expr::BoolLit(val) => match val {
-                true => self.chunk.write_chunk(OpCode::LdTrue, 0),
-                false => self.chunk.write_chunk(OpCode::LdFalse, 0),
-            },
+            Expr::BoolLit(val) => {
+                match val {
+                    true => self.chunk.write_chunk(OpCode::LdTrue, 0),
+                    false => self.chunk.write_chunk(OpCode::LdFalse, 0),
+                };
+            }
             Expr::StringLit(val) => {
                 let obj = if let Some(obj) = self.constant_strings.get(val) {
                     // reuse same String
@@ -145,10 +156,18 @@ impl<'a> Visitor<'a> for Codegen<'a> {
                 self.visit_expr(lhs);
                 self.visit_expr(rhs);
                 match op {
-                    Token::Plus => self.chunk.write_chunk(OpCode::Add, 0),
-                    Token::Minus => self.chunk.write_chunk(OpCode::Sub, 0),
-                    Token::Asterisk => self.chunk.write_chunk(OpCode::Mul, 0),
-                    Token::Slash => self.chunk.write_chunk(OpCode::Div, 0),
+                    Token::Plus => {
+                        self.chunk.write_chunk(OpCode::Add, 0);
+                    }
+                    Token::Minus => {
+                        self.chunk.write_chunk(OpCode::Sub, 0);
+                    }
+                    Token::Asterisk => {
+                        self.chunk.write_chunk(OpCode::Mul, 0);
+                    }
+                    Token::Slash => {
+                        self.chunk.write_chunk(OpCode::Div, 0);
+                    }
                     Token::Equals => {
                         let resolved_symbol =
                             *self.resolve_result.lookup_identifier(lhs.as_ref()).unwrap();
@@ -163,18 +182,24 @@ impl<'a> Visitor<'a> for Codegen<'a> {
                             }
                         }
                     }
-                    Token::EqualsEquals => self.chunk.write_chunk(OpCode::Eq, 0),
+                    Token::EqualsEquals => {
+                        self.chunk.write_chunk(OpCode::Eq, 0);
+                    }
                     Token::NotEquals => {
                         self.chunk.write_chunk(OpCode::Eq, 0);
                         self.chunk.write_chunk(OpCode::Not, 0);
                     }
-                    Token::LessThan => self.chunk.write_chunk(OpCode::Less, 0),
+                    Token::LessThan => {
+                        self.chunk.write_chunk(OpCode::Less, 0);
+                    }
                     Token::LessThanEquals => {
                         // a <= b equivalent to !(a > b)
                         self.chunk.write_chunk(OpCode::Greater, 0);
                         self.chunk.write_chunk(OpCode::Not, 0);
                     }
-                    Token::GreaterThan => self.chunk.write_chunk(OpCode::Greater, 0),
+                    Token::GreaterThan => {
+                        self.chunk.write_chunk(OpCode::Greater, 0);
+                    }
                     Token::GreaterThanEquals => {
                         // a >= b equivalent to !(a < b)
                         self.chunk.write_chunk(OpCode::Less, 0);

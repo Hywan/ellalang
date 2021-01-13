@@ -60,6 +60,8 @@ pub enum OpCode {
     /// Creates a closure with a constant function and pushes it onto the stack.
     /// *Variable number of operands*
     Closure = 19,
+    Jmp = 21,
+    JmpIfFalse = 22,
 }
 
 /// Represents a chunk of bytecode.
@@ -117,6 +119,7 @@ impl Chunk {
     }
 
     /// Write data to the [`Chunk`]. This can be an [`OpCode`] or an operand (`u8`).
+    /// Returns the index of the added byte.
     ///
     /// # Params
     /// * `opcode` - The data to write to the chunk.
@@ -126,16 +129,32 @@ impl Chunk {
     /// ```
     /// use ella_value::chunk::{Chunk, OpCode};
     /// let mut chunk = Chunk::new("my_chunk".to_string());
-    /// chunk.write_chunk(OpCode::Ldc, 0);
-    /// chunk.write_chunk(1, 0);
+    /// let index = chunk.write_chunk(OpCode::Ldc, 0);
+    /// assert_eq!(index, 0);
+    /// let index = chunk.write_chunk(1, 0);
+    /// assert_eq!(index, 1);
     /// assert_eq!(chunk.code, vec![0, 1]);
     /// assert_eq!(chunk.lines, vec![0, 0]);
     /// ```
-    pub fn write_chunk(&mut self, opcode: impl ToByteCode, line: usize) {
+    pub fn write_chunk(&mut self, opcode: impl ToByteCode, line: usize) -> usize {
         debug_assert_eq!(self.code.len(), self.lines.len());
         self.code.push(opcode.to_byte_code());
         self.lines.push(line);
         debug_assert_eq!(self.code.len(), self.lines.len());
+        return self.code.len() - 1; // -1 to include the effect of adding the byte to self.code
+    }
+
+    /// Patches a `jmp` or `jmp_if_false` instruction to jump to current position.
+    pub fn patch_jump(&mut self, offset: usize) {
+        // -2 to adjust for the bytecode for the jump itself.
+        let jump = self.code.len() - offset - 2;
+
+        if jump > std::u16::MAX as usize {
+            panic!("cannot jump more than std::u16::MAX");
+        }
+
+        self.code[offset] = ((jump >> 8) & 0xff) as u8;
+        self.code[offset + 1] = (jump & 0xff) as u8;
     }
 
     /// Add a constant to the constant table.
@@ -164,7 +183,7 @@ impl Chunk {
 
     /// Adds a debug annotation (shown when disassembling) to the last byte in the chunk.
     /// This method should be called right after writing the [`OpCode`] and before writing any operands.
-    /// 
+    ///
     /// **NOTE**: overrides any existing debug annotation.
     pub fn add_debug_annotation_at_last(&mut self, message: String) {
         self.debug_annotations.insert(self.code.len() - 1, message);

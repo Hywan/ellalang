@@ -106,6 +106,19 @@ impl Chunk {
         Ok(offset)
     }
 
+    /// Disassembles `jmp` and `jmp_if_false` (3 bytes) instruction.
+    fn jmp_instr(
+        &self,
+        f: &mut fmt::Formatter<'_>,
+        name: &str,
+        offset: usize,
+        msg: &str,
+    ) -> Result<usize, fmt::Error> {
+        let jump_offset: u16 = (self.code[offset + 1] as u16) << 8 | self.code[offset + 2] as u16;
+        writeln!(f, "{:<10} {} {}", name, jump_offset, msg)?;
+        Ok(offset + 3)
+    }
+
     /// Disassembles the instruction at the given `offset`.
     fn disassemble_instr(
         &self,
@@ -157,6 +170,8 @@ impl Chunk {
             Some(OpCode::Pop) => self.simple_instr(f, "pop", offset, msg),
             Some(OpCode::Calli) => self.calli_instr(f, "calli", offset, msg),
             Some(OpCode::Closure) => self.closure_instr(f, "closure", offset, msg),
+            Some(OpCode::Jmp) => self.jmp_instr(f, "jmp", offset, msg),
+            Some(OpCode::JmpIfFalse) => self.jmp_instr(f, "jmp_if_false", offset, msg),
             None => self.simple_instr(f, "invalid", offset, msg), // skip bad instruction
         } // returns the next ip
     }

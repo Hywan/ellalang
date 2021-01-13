@@ -91,7 +91,7 @@ impl<'a> Vm<'a> {
     }
 
     fn run(&mut self) -> InterpretResult {
-        macro_rules! read_byte {
+        macro_rules! read_u8 {
             () => {{
                 let byte: u8 = self.code()[self.ip()];
                 *self.ip_mut() += 1;
@@ -172,30 +172,30 @@ impl<'a> Vm<'a> {
         }
 
         while self.ip() < self.code().len() || try_implicit_ret!() {
-            match OpCode::from_u8(read_byte!()) {
+            match OpCode::from_u8(read_u8!()) {
                 Some(OpCode::Ldc) => {
                     let constant = read_constant!();
                     self.stack.push(constant);
                 }
                 Some(OpCode::LdLoc) => {
-                    let local_index = read_byte!() + frame!().frame_pointer as u8;
+                    let local_index = read_u8!() + frame!().frame_pointer as u8;
                     let local = self.stack[local_index as usize].clone();
                     self.stack.push(local);
                 }
                 Some(OpCode::StLoc) => {
-                    let local_index = read_byte!() + frame!().frame_pointer as u8;
+                    let local_index = read_u8!() + frame!().frame_pointer as u8;
                     let value = self.stack.pop().unwrap();
                     self.stack[local_index as usize] = value;
                 }
                 Some(OpCode::LdUpVal) => {
-                    let index = read_byte!();
+                    let index = read_u8!();
                     let upvalue =
                         self.call_stack.last().unwrap().closure.upvalues[index as usize].clone();
                     let value = self.resolve_upvalue_into_value(&upvalue.borrow());
                     self.stack.push(value);
                 }
                 Some(OpCode::StUpVal) => {
-                    let index = read_byte!();
+                    let index = read_u8!();
                     let value = self.stack.pop().unwrap();
                     let upvalue =
                         self.call_stack.last().unwrap().closure.upvalues[index as usize].clone();
@@ -273,7 +273,7 @@ impl<'a> Vm<'a> {
                                 unreachable!("can not call ObjKind::Fn, wrap function in a ObjKind::Closure instead");
                             }
                             ObjKind::Closure(closure) => {
-                                let calli_arity = read_byte!();
+                                let calli_arity = read_u8!();
 
                                 if closure.func.arity != calli_arity as u32 {
                                     return self.runtime_error(format!(
@@ -294,7 +294,7 @@ impl<'a> Vm<'a> {
                                 arity,
                                 func,
                             }) => {
-                                let calli_arity = read_byte!();
+                                let calli_arity = read_u8!();
 
                                 if *arity != calli_arity as u32 {
                                     return self.runtime_error(format!(
@@ -335,8 +335,8 @@ impl<'a> Vm<'a> {
                     };
 
                     for _i in 0..upvalues_count {
-                        let is_local = read_byte!() != 0;
-                        let upvalue_index = read_byte!();
+                        let is_local = read_u8!() != 0;
+                        let upvalue_index = read_u8!();
 
                         let upvalue = if is_local {
                             match self.find_open_upvalue_with_index(upvalue_index as usize) {
@@ -361,6 +361,8 @@ impl<'a> Vm<'a> {
                         kind: ObjKind::Closure(closure),
                     })));
                 }
+                Some(OpCode::Jmp) => todo!(),
+                Some(OpCode::JmpIfFalse) => todo!(),
                 None => panic!("Invalid instruction"),
             }
 
