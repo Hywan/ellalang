@@ -67,8 +67,8 @@ pub struct Resolver<'a> {
     resolved_symbol_table: ResolvedSymbolTable,
     /// A [`Vec`] of symbols that are currently in (lexical) scope.
     accessible_symbols: Vec<Rc<RefCell<Symbol>>>,
-    /// The current scope depth. `0` is global scope.
-    current_scope_depth: u32,
+    /// A stack of current function scope depths. `0` is global scope.
+    function_scope_depths: Vec<u32>,
     /// Every time a new function scope is created, `current_func_offset` should be set to `self.resolved_symbols.len()`.
     /// When exiting a function scope, the value should be reverted to previous value.
     current_func_offset: i32,
@@ -84,7 +84,7 @@ impl<'a> Resolver<'a> {
             symbol_table: SymbolTable::new(),
             resolved_symbol_table: ResolvedSymbolTable::new(),
             accessible_symbols: Vec::new(),
-            current_scope_depth: 0,
+            function_scope_depths: vec![0],
             current_func_offset: 0,
             function_upvalues: vec![Vec::new()],
             source,
@@ -121,18 +121,20 @@ impl<'a> Resolver<'a> {
 
     /// Enter a scope.
     fn enter_scope(&mut self) {
-        self.current_scope_depth += 1;
+        *self.function_scope_depths.last_mut().unwrap() += 1;
     }
 
     /// Exit a scope. Removes all declarations introduced in previous scope.
     fn exit_scope(&mut self) {
-        self.current_scope_depth -= 1;
+        *self.function_scope_depths.last_mut().unwrap() -= 1;
 
         // Remove all symbols in current scope.
         self.accessible_symbols = self
             .accessible_symbols
             .iter()
-            .filter(|symbol| symbol.borrow().scope_depth <= self.current_scope_depth)
+            .filter(|symbol| {
+                symbol.borrow().scope_depth <= *self.function_scope_depths.last().unwrap()
+            })
             .cloned()
             .collect();
     }
@@ -141,7 +143,7 @@ impl<'a> Resolver<'a> {
     fn add_symbol(&mut self, ident: String, stmt: Option<&Stmt>) {
         let symbol = Rc::new(RefCell::new(Symbol {
             ident,
-            scope_depth: self.current_scope_depth,
+            scope_depth: *self.function_scope_depths.last().unwrap(),
             is_captured: false, // not captured by default
             upvalues: Vec::new(),
         }));
@@ -149,6 +151,21 @@ impl<'a> Resolver<'a> {
         if let Some(stmt) = stmt {
             self.symbol_table.insert(stmt as *const Stmt, symbol);
         }
+    }
+
+    /// Returns the function scope depth of the specified `scope_depth`.
+    fn find_function_scope_depth(&self, scope_depth: u32) -> usize {
+        for (i, function_scope_depth) in self.function_scope_depths.iter().enumerate().rev() {
+            if *function_scope_depth < scope_depth {
+                return i + 1;
+            }
+        }
+        return 0;
+    }
+
+    /// Returns `true` if both scope depths are in the same function (e.g. using block statements). Returns `false` otherwise.
+    fn in_same_function_scope(&self, first: u32, second: u32) -> bool {
+        self.find_function_scope_depth(first) == self.find_function_scope_depth(second)
     }
 
     /// Returns a `Some((usize, Rc<RefCell<Symbol>>))` or `None` if cannot be resolved.
@@ -162,9 +179,12 @@ impl<'a> Resolver<'a> {
         ident: &str,
         span: Range<usize>,
     ) -> Option<(usize, Rc<RefCell<Symbol>>)> {
-        for (i, symbol) in self.accessible_symbols.iter_mut().enumerate().rev() {
+        for (i, symbol) in self.accessible_symbols.iter().enumerate().rev() {
             if symbol.borrow().ident == ident {
-                if symbol.borrow().scope_depth == self.current_scope_depth {
+                if self.in_same_function_scope(
+                    symbol.borrow().scope_depth,
+                    *self.function_scope_depths.last().unwrap(),
+                ) {
                     return Some((i - self.current_func_offset as usize, symbol.clone()));
                 } else {
                     // capture outer variable
@@ -172,8 +192,12 @@ impl<'a> Resolver<'a> {
 
                     // thread upvalue in enclosing functions
                     let mut prev_upvalue_index = 0;
-                    for scope_depth in symbol.borrow().scope_depth + 1..=self.current_scope_depth {
-                        let is_local = scope_depth == symbol.borrow().scope_depth + 1;
+                    for scope_depth in self.find_function_scope_depth(symbol.borrow().scope_depth)
+                        + 1
+                        ..=self
+                            .find_function_scope_depth(*self.function_scope_depths.last().unwrap())
+                    {
+                        let is_local = scope_depth == symbol.borrow().scope_depth as usize + 1;
                         self.function_upvalues[scope_depth as usize].push(ResolvedUpValue {
                             is_local,
                             index: if is_local {
@@ -232,7 +256,10 @@ impl<'a> Visitor<'a> for Resolver<'a> {
                         expr as *const Expr,
                         ResolvedSymbol {
                             offset: offset as i32,
-                            is_upvalue: self.current_scope_depth > symbol.borrow().scope_depth,
+                            is_upvalue: self.find_function_scope_depth(
+                                *self.function_scope_depths.last().unwrap(),
+                            ) > self
+                                .find_function_scope_depth(symbol.borrow().scope_depth),
                         },
                     );
                 }
@@ -266,6 +293,8 @@ impl<'a> Visitor<'a> for Resolver<'a> {
 
                 self.current_func_offset = self.accessible_symbols.len() as i32;
                 self.function_upvalues.push(Vec::new());
+                self.function_scope_depths
+                    .push(*self.function_scope_depths.last().unwrap());
 
                 self.enter_scope();
                 // add arguments
@@ -284,6 +313,7 @@ impl<'a> Visitor<'a> for Resolver<'a> {
                     .unwrap()
                     .borrow_mut()
                     .upvalues = self.function_upvalues.pop().unwrap();
+                self.function_scope_depths.pop();
 
                 self.current_func_offset = old_func_offset;
             }

@@ -123,6 +123,16 @@ mod functions {
         }
 
         #[test]
+        fn capture_with_block_stmt() {
+            interpret(
+                r#"
+                {
+                    assert(true);
+                }"#,
+            )
+        }
+
+        #[test]
         fn close_upvalues() {
             interpret(
                 r#"
@@ -176,7 +186,8 @@ mod functions {
 
         #[test]
         fn nested_upvalues() {
-            interpret(r#"
+            interpret(
+                r#"
                 fn outer() {
                     let x = "value";
 
@@ -191,7 +202,8 @@ mod functions {
 
                 let mid = outer();
                 let in = mid();
-                assert_eq(in(), "value");"#);
+                assert_eq(in(), "value");"#,
+            );
         }
     }
 }
