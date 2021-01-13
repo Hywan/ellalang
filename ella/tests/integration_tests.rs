@@ -41,6 +41,20 @@ fn comments() {
     );
 }
 
+#[test]
+fn is_nan() {
+    interpret(r#"assert(!is_nan(1));"#);
+    interpret(r#"assert(is_nan(0/0));"#);
+}
+
+#[test]
+fn parse_number() {
+    interpret(r#"assert(!is_nan(parse_number("1")));"#);
+    interpret(r#"assert(!is_nan(parse_number("1.2")));"#);
+    interpret(r#"assert(is_nan(parse_number("not a number")));"#);
+    interpret(r#"assert(is_nan(parse_number(1)));"#);
+}
+
 mod functions {
     use super::*;
 
