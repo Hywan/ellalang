@@ -3,6 +3,7 @@
 use crate::chunk::{Chunk, OpCode};
 use crate::object::ObjKind;
 use crate::Value;
+use console::style;
 use num_traits::FromPrimitive;
 use std::fmt;
 
@@ -25,13 +26,14 @@ impl Chunk {
         f: &mut fmt::Formatter<'_>,
         name: &str,
         offset: usize,
+        msg: &str,
     ) -> Result<usize, fmt::Error> {
         let constant_index = self.code[offset + 1];
         let constant = self.constants[constant_index as usize].clone();
         writeln!(
             f,
-            "{:<10} {:<3} (value = {})",
-            name, constant_index, constant
+            "{:<10} {:<3} (value = {}) {}",
+            name, constant_index, constant, msg
         )?;
         Ok(offset + 2)
     }
@@ -42,9 +44,10 @@ impl Chunk {
         f: &mut fmt::Formatter<'_>,
         name: &str,
         offset: usize,
+        msg: &str,
     ) -> Result<usize, fmt::Error> {
         let var_offset = self.code[offset + 1];
-        writeln!(f, "{:<10} {}", name, var_offset)?;
+        writeln!(f, "{:<10} {} {}", name, var_offset, msg)?;
         Ok(offset + 2)
     }
 
@@ -54,9 +57,10 @@ impl Chunk {
         f: &mut fmt::Formatter<'_>,
         name: &str,
         offset: usize,
+        msg: &str,
     ) -> Result<usize, fmt::Error> {
         let arity = self.code[offset + 1];
-        writeln!(f, "{:<10} {}", name, arity)?;
+        writeln!(f, "{:<10} {} {}", name, arity, msg)?;
         Ok(offset + 2)
     }
 
@@ -66,13 +70,14 @@ impl Chunk {
         f: &mut fmt::Formatter<'_>,
         name: &str,
         mut offset: usize,
+        msg: &str,
     ) -> Result<usize, fmt::Error> {
         let constant_index = self.code[offset + 1];
         let constant = self.constants[constant_index as usize].clone();
         writeln!(
             f,
-            "{:<10} {:<3} (value = {})",
-            name, constant_index, constant
+            "{:<10} {:<3} (value = {}) {}",
+            name, constant_index, constant, msg
         )?;
         offset += 2;
 
@@ -119,18 +124,23 @@ impl Chunk {
         }
 
         let blank_msg = String::new();
-        let msg = &self
-            .debug_annotations
-            .get(&offset)
-            .map(|string| format!("// {}", string))
-            .unwrap_or(blank_msg);
+        let msg = &format!(
+            "{}",
+            style(
+                self.debug_annotations
+                    .get(&offset)
+                    .map(|string| format!("// {}", string))
+                    .unwrap_or(blank_msg),
+            )
+            .green()
+        );
 
         match OpCode::from_u8(instr) {
-            Some(OpCode::Ldc) => self.constant_instr(f, "ldc", offset),
-            Some(OpCode::LdLoc) => self.ld_or_st_instr(f, "ldloc", offset),
-            Some(OpCode::StLoc) => self.ld_or_st_instr(f, "stloc", offset),
-            Some(OpCode::LdUpVal) => self.ld_or_st_instr(f, "ldupval", offset),
-            Some(OpCode::StUpVal) => self.ld_or_st_instr(f, "stupval", offset),
+            Some(OpCode::Ldc) => self.constant_instr(f, "ldc", offset, msg),
+            Some(OpCode::LdLoc) => self.ld_or_st_instr(f, "ldloc", offset, msg),
+            Some(OpCode::StLoc) => self.ld_or_st_instr(f, "stloc", offset, msg),
+            Some(OpCode::LdUpVal) => self.ld_or_st_instr(f, "ldupval", offset, msg),
+            Some(OpCode::StUpVal) => self.ld_or_st_instr(f, "stupval", offset, msg),
             Some(OpCode::CloseUpVal) => self.simple_instr(f, "closeupval", offset, msg),
             Some(OpCode::Neg) => self.simple_instr(f, "neg", offset, msg),
             Some(OpCode::Not) => self.simple_instr(f, "not", offset, msg),
@@ -145,8 +155,8 @@ impl Chunk {
             Some(OpCode::Greater) => self.simple_instr(f, "greater", offset, msg),
             Some(OpCode::Less) => self.simple_instr(f, "less", offset, msg),
             Some(OpCode::Pop) => self.simple_instr(f, "pop", offset, msg),
-            Some(OpCode::Calli) => self.calli_instr(f, "calli", offset),
-            Some(OpCode::Closure) => self.closure_instr(f, "closure", offset),
+            Some(OpCode::Calli) => self.calli_instr(f, "calli", offset, msg),
+            Some(OpCode::Closure) => self.closure_instr(f, "closure", offset, msg),
             None => self.simple_instr(f, "invalid", offset, msg), // skip bad instruction
         } // returns the next ip
     }

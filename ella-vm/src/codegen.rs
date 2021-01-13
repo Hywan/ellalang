@@ -115,15 +115,19 @@ impl<'a> Visitor<'a> for Codegen<'a> {
                 self.chunk.write_chunk(OpCode::Ldc, 0);
                 self.chunk.write_chunk(constant, 0);
             }
-            Expr::Identifier(_) => {
+            Expr::Identifier(ident) => {
                 let resolved_symbol = *self.resolve_result.lookup_identifier(expr).unwrap();
                 match resolved_symbol.is_upvalue {
                     true => {
                         self.chunk.write_chunk(OpCode::LdUpVal, 0);
+                        self.chunk
+                            .add_debug_annotation_at_last(format!("Load upvalue {}", ident));
                         self.chunk.write_chunk(resolved_symbol.offset as u8, 0);
                     }
                     false => {
                         self.chunk.write_chunk(OpCode::LdLoc, 0);
+                        self.chunk
+                            .add_debug_annotation_at_last(format!("Load local variable {}", ident));
                         self.chunk.write_chunk(resolved_symbol.offset as u8, 0);
                     }
                 }

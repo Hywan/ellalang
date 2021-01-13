@@ -100,6 +100,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "console"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7cc80946b3480f421c2f17ed1cb841753a371c7c5104f51d507e13f532c856aa"
+dependencies = [
+ "encode_unicode",
+ "lazy_static",
+ "libc",
+ "terminal_size",
+ "winapi",
+]
+
+[[package]]
 name = "const_fn"
 version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -266,6 +279,7 @@ version = "0.1.0"
 name = "ella-value"
 version = "0.1.0"
 dependencies = [
+ "console 0.14.0",
  "enum-primitive-derive",
  "num-traits",
 ]
@@ -325,7 +339,7 @@ version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "863bf97e7130bf788f29a99bc4073735af6b8ecc3da6a39c23b3a688d2d3109a"
 dependencies = [
- "console",
+ "console 0.12.0",
  "difference",
  "lazy_static",
  "serde",
