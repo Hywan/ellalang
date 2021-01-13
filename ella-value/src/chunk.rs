@@ -1,5 +1,7 @@
 //! Definitions for [`Chunk`] and [`OpCode`].
 
+use std::collections::HashMap;
+
 use crate::{Value, ValueArray};
 use enum_primitive_derive::Primitive;
 
@@ -73,6 +75,8 @@ pub struct Chunk {
     /// For most cases, should be the name of the function.
     /// If the [`Chunk`] is the top-level chunk, the name should `<global>`.
     pub name: String,
+    /// Per line debug annotations.
+    pub(crate) debug_annotations: HashMap<usize, String>,
 }
 
 /// `u8` and `OpCode` should implement this trait.
@@ -95,7 +99,7 @@ impl ToByteCode for u8 {
 
 impl Chunk {
     /// Create an empty chunk with the specified `name`.
-    /// 
+    ///
     /// # Example
     /// ```
     /// use ella_value::chunk::Chunk;
@@ -108,15 +112,16 @@ impl Chunk {
             lines: Vec::new(),
             constants: ValueArray::new(),
             name,
+            debug_annotations: HashMap::new(),
         }
     }
 
     /// Write data to the [`Chunk`]. This can be an [`OpCode`] or an operand (`u8`).
-    /// 
+    ///
     /// # Params
     /// * `opcode` - The data to write to the chunk.
     /// * `line` - The original source line. This is used for runtime error messages and debugging.
-    /// 
+    ///
     /// # Example
     /// ```
     /// use ella_value::chunk::{Chunk, OpCode};
@@ -135,7 +140,7 @@ impl Chunk {
 
     /// Add a constant to the constant table.
     /// Returns the index of the added constant.
-    /// 
+    ///
     /// # Example
     /// ```
     /// use ella_value::chunk::Chunk;
@@ -155,5 +160,13 @@ impl Chunk {
             todo!("load constant wide");
         }
         loc as u8
+    }
+
+    /// Adds a debug annotation (shown when disassembling) to the last byte in the chunk.
+    /// This method should be called right after writing the [`OpCode`] and before writing any operands.
+    /// 
+    /// **NOTE**: overrides any existing debug annotation.
+    pub fn add_debug_annotation_at_last(&mut self, message: String) {
+        self.debug_annotations.insert(self.code.len() - 1, message);
     }
 }

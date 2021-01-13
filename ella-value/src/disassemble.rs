@@ -13,8 +13,9 @@ impl Chunk {
         f: &mut fmt::Formatter<'_>,
         name: &str,
         offset: usize,
+        msg: &str,
     ) -> Result<usize, fmt::Error> {
-        writeln!(f, "{}", name)?;
+        writeln!(f, "{} {}", name, msg)?;
         Ok(offset + 1)
     }
 
@@ -117,29 +118,36 @@ impl Chunk {
             write!(f, "{:>4} ", self.lines[offset])?;
         }
 
+        let blank_msg = String::new();
+        let msg = &self
+            .debug_annotations
+            .get(&offset)
+            .map(|string| format!("// {}", string))
+            .unwrap_or(blank_msg);
+
         match OpCode::from_u8(instr) {
             Some(OpCode::Ldc) => self.constant_instr(f, "ldc", offset),
             Some(OpCode::LdLoc) => self.ld_or_st_instr(f, "ldloc", offset),
             Some(OpCode::StLoc) => self.ld_or_st_instr(f, "stloc", offset),
             Some(OpCode::LdUpVal) => self.ld_or_st_instr(f, "ldupval", offset),
             Some(OpCode::StUpVal) => self.ld_or_st_instr(f, "stupval", offset),
-            Some(OpCode::CloseUpVal) => self.simple_instr(f, "closeupval", offset),
-            Some(OpCode::Neg) => self.simple_instr(f, "neg", offset),
-            Some(OpCode::Not) => self.simple_instr(f, "not", offset),
-            Some(OpCode::Add) => self.simple_instr(f, "add", offset),
-            Some(OpCode::Sub) => self.simple_instr(f, "sub", offset),
-            Some(OpCode::Mul) => self.simple_instr(f, "mul", offset),
-            Some(OpCode::Div) => self.simple_instr(f, "div", offset),
-            Some(OpCode::Ret) => self.simple_instr(f, "ret", offset),
-            Some(OpCode::LdTrue) => self.simple_instr(f, "ld_true", offset),
-            Some(OpCode::LdFalse) => self.simple_instr(f, "ld_false", offset),
-            Some(OpCode::Eq) => self.simple_instr(f, "eq", offset),
-            Some(OpCode::Greater) => self.simple_instr(f, "greater", offset),
-            Some(OpCode::Less) => self.simple_instr(f, "less", offset),
-            Some(OpCode::Pop) => self.simple_instr(f, "pop", offset),
+            Some(OpCode::CloseUpVal) => self.simple_instr(f, "closeupval", offset, msg),
+            Some(OpCode::Neg) => self.simple_instr(f, "neg", offset, msg),
+            Some(OpCode::Not) => self.simple_instr(f, "not", offset, msg),
+            Some(OpCode::Add) => self.simple_instr(f, "add", offset, msg),
+            Some(OpCode::Sub) => self.simple_instr(f, "sub", offset, msg),
+            Some(OpCode::Mul) => self.simple_instr(f, "mul", offset, msg),
+            Some(OpCode::Div) => self.simple_instr(f, "div", offset, msg),
+            Some(OpCode::Ret) => self.simple_instr(f, "ret", offset, msg),
+            Some(OpCode::LdTrue) => self.simple_instr(f, "ld_true", offset, msg),
+            Some(OpCode::LdFalse) => self.simple_instr(f, "ld_false", offset, msg),
+            Some(OpCode::Eq) => self.simple_instr(f, "eq", offset, msg),
+            Some(OpCode::Greater) => self.simple_instr(f, "greater", offset, msg),
+            Some(OpCode::Less) => self.simple_instr(f, "less", offset, msg),
+            Some(OpCode::Pop) => self.simple_instr(f, "pop", offset, msg),
             Some(OpCode::Calli) => self.calli_instr(f, "calli", offset),
             Some(OpCode::Closure) => self.closure_instr(f, "closure", offset),
-            None => self.simple_instr(f, "invalid", offset), // skip bad instruction
+            None => self.simple_instr(f, "invalid", offset, msg), // skip bad instruction
         } // returns the next ip
     }
 }
