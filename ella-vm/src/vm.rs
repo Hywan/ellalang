@@ -168,9 +168,7 @@ impl<'a> Vm<'a> {
                     self.close_upvalues(i);
                 }
                 // cleanup local variables created in function
-                while self.stack.len() > frame.frame_pointer {
-                    self.stack.pop().unwrap();
-                }
+                self.stack.truncate(frame.frame_pointer);
 
                 self.stack.push(return_value);
             }}

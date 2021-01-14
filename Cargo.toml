@@ -7,3 +7,7 @@ members = [
   "ella-value",
   "ella-vm",
 ]
+
+[profile.release]
+# Uncomment when debugging or profiling release build
+# debug = true
