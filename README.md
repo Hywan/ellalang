@@ -12,7 +12,7 @@ println("Hello World!");
 ```
 Yep! That's it. Don't forget to add the semicolon (`;`) character at the end.
 
-#### Variables
+### Variables
 
 One can also store values inside variables:
 ```
@@ -39,7 +39,7 @@ let x = 10;
 let y = x / 2; // should evaluate to 2
 ```
 
-#### Functions
+### Functions
 
 Like almost every other programming language, Ella supports defining and calling functions (aka methods in some languages):
 ```
@@ -63,7 +63,7 @@ fn double(x) {
 ```
 Results are returned using a `return` statement.
 
-#### Expressions
+### Expressions
 
 As seen earlier, Ella includes expressions.
 
@@ -87,7 +87,7 @@ fn my_function() { ... }
 my_function // reference to a function (not a function call)
 ```
 
-#### Higher order functions and closures
+### Higher order functions and closures
 
 In Ella, functions are also variables. This means we can pass functions to other functions as arguments. Example:
 ```
@@ -116,7 +116,7 @@ let func = compose(add_one, double); // func adds one and than doubles the resul
 func(3); // evaluates to (3 + 1) * 2 = 8
 ```
 
-#### Control flow
+### Control flow
 
 Ella supports structured control flow via `if`/`else` and `while` (`for` is still being implemented).
 
@@ -138,7 +138,7 @@ while condition {
 ```
 If `condition` is false since the very beginning, the loop will never execute.
 
-#### Builtin functions
+### Builtin functions
 
 Ella includes some builtin functions that are defined in Rust:
 
